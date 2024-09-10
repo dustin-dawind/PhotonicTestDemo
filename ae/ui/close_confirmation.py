@@ -1,0 +1,16 @@
+from PyQt5.QtWidgets import QMessageBox
+
+
+class CloseConfirmationUI(QMessageBox):
+    def __init__(self,
+                 parent=None,
+                 **kwargs):
+        super().__init__(QMessageBox.Question,
+                         "Automation Examples",
+                         "Are you sure you want to quit?",
+                         QMessageBox.Yes | QMessageBox.No,
+                         parent=parent,
+                         **kwargs)
+
+        self.setEscapeButton(QMessageBox.No)
+        self.setDefaultButton(QMessageBox.No)
