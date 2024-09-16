@@ -1,0 +1,16 @@
+edit_with_sublime_text = true
+
+output_filepath = "outputtestpath"
+
+[input_dir_paths]
+    liv = "livtestpath"
+    spectra = "spectratestpath"
+
+[analysis_flags]
+    plot = true
+    liv.threshold = false
+    liv.slope_efficiency = false
+    liv.peak_efficiency = false
+    liv.peak_power = false
+    spectra.peak_wavelength = false
+    spectra.fwhm = false

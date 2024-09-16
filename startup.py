@@ -1,5 +1,5 @@
 import sys
-from ae import MainWindow
+from gui_resources import MainWindow
 from PyQt5.QtWidgets import QApplication
 
 

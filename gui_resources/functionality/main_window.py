@@ -1,7 +1,9 @@
-from ae.ui import (
+from main_resources.ui import (
     CloseConfirmationUI,
     MainWindowUI,
 )
+
+import analysisfromtoml
 
 from PyQt5.QtCore import (
     QEvent,
@@ -30,12 +32,17 @@ class MainWindow(MainWindowUI):
             else:
                 e.ignore()
 
-    def show_example1(self):
-        pass
+    @staticmethod
+    def show_example1():
+        analysisfromtoml.launch_cmd()
 
     def show_example2(self):
+        # TODO:
+        #  * Make a live data viewer using pyqtgraph that streams real-time generated data using virtual device drivers
         pass
 
     def show_example3(self):
+        # TODO:
+        #  * Come up with a third example
         pass
 

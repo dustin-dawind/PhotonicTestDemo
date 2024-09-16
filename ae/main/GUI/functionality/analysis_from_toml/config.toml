@@ -1,7 +1,0 @@
-edit_with_sublime = "True"
-
-output_filepath = "outputtestpath"
-
-[input_dir_paths]
-    liv = "livtestpath"
-    spectra = "spectratestpath"
