@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject
 
-from base_instrumentation.instrument_emulators import CommunicationHandler
-from base_instrumentation.instruments.abc import AbstractInstrument
+from instruments.instrument_emulators import CommunicationHandler
+from instruments.instrument_wrappers.abc import AbstractInstrument
 
 
 class Instrument(AbstractInstrument):

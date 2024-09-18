@@ -6,7 +6,8 @@ from pathlib import Path
 
 from rich.pretty import pprint
 
-from main_resources.console import console
+from rich.console import Console
+console = Console()
 
 
 # Check if the script is being run in a frozen environment (e.g. as an executable)

@@ -12,12 +12,13 @@ class LaserEmulator(QObject):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.v_th = 0.025852  # This is constant
+        self._v_th = 0.025852  # This is constant
+        self._non_ideal_factor = 0
+        self.exp_denom = self._v_th * self._non_ideal_factor
 
         self._threshold = 0
         self._ase_multiplier = 0
         self._slope_eff = 0
-        self.non_ideal_factor = 0
         self.i_rev_sat = 0
         self.swap_device()  # Set characteristic parameters
 
@@ -39,9 +40,9 @@ class LaserEmulator(QObject):
         else:
             return np.random.normal(0, 1)
 
-    def _f_rev_iv(self, input_current):
+    def _f_v_from_i(self, input_current):
         if self._psu_on:
-            return (self.non_ideal_factor * self.v_th) * np.log((1 / self.i_rev_sat) * input_current + 1)
+            return self.exp_denom * np.log((1 / self.i_rev_sat) * input_current + 1)  # Inverse Shockley diode equation
         else:
             return 0
 
@@ -50,11 +51,13 @@ class LaserEmulator(QObject):
         self._i_current = input_current
         power = self._f_liv(self._i_current)
         self.power_value_ready.emit(power)
+        return power
 
     @pyqtSlot()
     def update_voltage(self):
-        voltage = self._f_rev_iv(self._i_current)
+        voltage = self._f_v_from_i(self._i_current)
         self.voltage_value_ready.emit(voltage)
+        return voltage
 
     @pyqtSlot(str)
     def psu_status_changed(self, status: bool):
@@ -68,9 +71,11 @@ class LaserEmulator(QObject):
         # LIV parameters
         self._threshold = np.random.normal(100, 10)
         self._ase_multiplier = 1 / np.random.normal(70, 5)
-        self._slope_eff = np.random.normal(0.9, 0.05)
+        self._slope_eff = np.random.normal(0.9, 0.025)
 
         # RevIV parameters
-        self.non_ideal_factor = 1.2 + np.random.normal(0, 0.025)
+        self._non_ideal_factor = 1.2 + np.random.normal(0, 0.025)
+        self.exp_denom = self._v_th * self._non_ideal_factor
+
         self.i_rev_sat = 1e-14 / np.random.normal(50, 10)
 

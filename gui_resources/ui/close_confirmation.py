@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMessageBox
 
 
-class CloseConfirmationUI(QMessageBox):
+class CloseConfirmation(QMessageBox):
     def __init__(self,
                  parent=None,
                  **kwargs):

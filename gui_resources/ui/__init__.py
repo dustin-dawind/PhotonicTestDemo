@@ -1,7 +1,7 @@
-from main_resources.ui.main_window import MainWindowUI
-from main_resources.ui.close_confirmation import CloseConfirmationUI
+from gui_resources.ui.close_confirmation import CloseConfirmation
+from gui_resources.ui.main_window import MainWindow
 
 __all__ = [
-    "MainWindowUI",
-    "CloseConfirmationUI"
+    "CloseConfirmation",
+    "MainWindow",
 ]

@@ -1,9 +1,9 @@
-from instruments import (
+from instruments.instrument_wrappers import (
     camera,
     power_meter,
     psu
 )
-from instrument_emulators import (
+from instruments.instrument_emulators import (
     CameraEmulator,
     PSUEmulator,
     PowerMeterEmulator,
@@ -15,7 +15,7 @@ from PyQt5.QtCore import (
 )
 
 
-class AllInstruments:
+class InstrumentRegistry:
     def __init__(self):
 
         self.psu_emulator = PSUEmulator()
@@ -47,6 +47,6 @@ class AllInstruments:
 
 
 if __name__ == "__main__":
-    all_instruments = AllInstruments()
+    all_instruments = InstrumentRegistry()
 
 

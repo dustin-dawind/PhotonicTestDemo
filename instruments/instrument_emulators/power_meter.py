@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from base_instrumentation.instrument_emulators.abc import (
+from instruments.instrument_emulators.abc import (
     Setting,
     AbstractEmulator
 )
@@ -27,7 +27,6 @@ class PowerMeterEmulator(QObject, AbstractEmulator):
                 }
     default_settings = deepcopy(settings)
 
-    # measurement_mutex = QReadWriteLock()
     settings_mutex = QReadWriteLock()
     response_mutex = QMutex()
 

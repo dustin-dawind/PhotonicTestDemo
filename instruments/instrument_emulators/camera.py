@@ -1,7 +1,7 @@
 from copy import deepcopy
 import numpy as np
 
-from base_instrumentation.instrument_emulators.abc import (
+from instruments.instrument_emulators.abc import (
     Setting,
     AbstractEmulator
 )

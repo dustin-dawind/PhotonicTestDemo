@@ -1,4 +1,4 @@
-from base_instrumentation.instrument_emulators.abc.abc import (
+from instruments.instrument_emulators.abc.abc import (
     AbstractEmulator,
     Setting
 )

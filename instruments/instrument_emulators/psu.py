@@ -1,7 +1,7 @@
 from copy import deepcopy
 import numpy as np
 
-from base_instrumentation.instrument_emulators.abc import (
+from instruments.instrument_emulators.abc import (
     Setting,
     AbstractEmulator
 )
@@ -44,6 +44,8 @@ class PSUEmulator(QObject, AbstractEmulator):
 
         self._i_set = 0
         self._output = "OFF"
+
+        self._relative_noise = 0.02  # (0.02 == 2%)
 
         self.poll_settings_timer = QTimer(self)
         self.poll_settings_timer.setInterval(50)
@@ -99,7 +101,7 @@ class PSUEmulator(QObject, AbstractEmulator):
             self.output_changed.emit(output)
 
         if output == "ON":
-            i_current = i_set + np.random.normal(0, i_set * 0.02)
+            i_current = i_set + np.random.normal(0, i_set * self._relative_noise)
         else:
             i_current = 0
 

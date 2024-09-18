@@ -3,7 +3,7 @@ from PyQt5.QtCore import (
     QObject,
 )
 
-from base_instrumentation.instrument_emulators.abc import AbstractEmulator
+from instruments.instrument_emulators.abc import AbstractEmulator
 
 
 class InstrumentError(Exception):
