@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout
 )
 
-class TopBarUI(QWidget):
+class TopBanner(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -19,10 +19,13 @@ class TopBarUI(QWidget):
         font.setPointSize(11)
         self.setFont(font)
 
-        self.test_script_path = ScriptSelector()
-        self.start_stop = StartStop()
+        self.script_selector = ScriptSelector()
 
-        layout.addWidget(self.test_script_path, stretch=1)
+        start_stop = StartStop()
+        self.start_btn = start_stop.start_btn
+        self.stop_btn = start_stop.stop_btn
+
+        layout.addWidget(self.script_selector, stretch=1)
         layout.addWidget(self.start_stop)
 
 

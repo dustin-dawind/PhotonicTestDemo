@@ -11,6 +11,15 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 
+# Check if the script is being run in a frozen environment (e.g. as an executable)
+is_frozen = getattr(sys, 'frozen', False)
+if is_frozen:
+    base_path = Path(sys._MEIPASS)
+else:
+    base_path = Path.cwd().parents[3]
+
+PATH_TO_TEST_SCRIPTS = base_path / "test_scripts"
+
 
 class ScriptSelectorUI(QWidget):
     def __init__(self, parent=None):
@@ -21,22 +30,20 @@ class ScriptSelectorUI(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        self.label = QLabel("<u>Script Path</u>:")
+        label = QLabel("<u>Script Path</u>:")
 
-        self.line_edit = QLineEdit()
-        self.line_edit.setReadOnly(True)
+        self.script_path_display = QLineEdit()
+        self.script_path_display.setReadOnly(True)
 
         self.change_script_btn = QPushButton("Change Script")
 
 
-        layout.addWidget(self.label)
-        layout.addWidget(self.line_edit, stretch=1)
+        layout.addWidget(label)
+        layout.addWidget(self.script_path_display, stretch=1)
         layout.addWidget(self.change_script_btn)
 
 
 class ScriptSelector(ScriptSelectorUI):
-    load_script_signal = pyqtSignal(str)
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
@@ -45,15 +52,11 @@ class ScriptSelector(ScriptSelectorUI):
     def open_file_dialog(self):
         filepath, _ = QFileDialog.getOpenFileName(parent=None,
                                                         caption="Select Script",
-                                                        directory="",
+                                                        directory=PATH_TO_TEST_SCRIPTS,
                                                         filter="Python Files (*.py)",
                                                         options=QFileDialog.HideNameFilterDetails | QFileDialog.ReadOnly
                                                         )
-        self.line_edit.setText(filepath)
-
-    @pyqtSlot()
-    def notify_script_loader(self):
-        self.load_script_signal.emit(self.line_edit.text())
+        self.script_path_display.setText(filepath)
 
 
 if __name__ == "__main__":

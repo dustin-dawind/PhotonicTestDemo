@@ -37,7 +37,7 @@ class DataSeries:
         self.voltage_series.setData(np.array(self._voltage_data, dtype=np.float64))
 
 
-class LIVDataMonitorUI(pg.PlotWidget):
+class DataPlotterUI(pg.PlotWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -81,7 +81,7 @@ class LIVDataMonitorUI(pg.PlotWidget):
                             )
 
 
-class LIVDataMonitor(LIVDataMonitorUI):
+class DataPlotter(DataPlotterUI):
     def __init__(self,
                  parent=None,
                  starting_device_number: int = 0,
