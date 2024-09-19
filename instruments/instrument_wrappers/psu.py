@@ -1,7 +1,9 @@
-from PyQt5.QtCore import QObject
-
 from instruments.instrument_emulators import CommunicationHandler
 from instruments.instrument_wrappers.abc import AbstractInstrument
+
+from PyQt5.QtCore import (
+    QObject
+)
 
 
 class Instrument(AbstractInstrument):
@@ -52,7 +54,7 @@ class Instrument(AbstractInstrument):
 
     @property
     def i_lim(self):
-        return self._q("ILim")
+        return float(self._q("ILim"))
 
     @i_lim.setter
     def i_lim(self, value):
@@ -68,14 +70,14 @@ class Instrument(AbstractInstrument):
 
     @property
     def i_setpoint(self):
-        return self._q("ISet")
+        return float(self._q("ISet"))
 
     @i_setpoint.setter
     def i_setpoint(self, value):
         self._w(f"ISet {value}")
 
     def measure_current(self):
-        return self._q("ICurrent")
+        return float(self._q("ICurrent"))
 
     def measure_voltage(self):
-        return self._q("VCurrent")
+        return float(self._q("VCurrent"))

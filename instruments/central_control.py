@@ -11,12 +11,14 @@ from instruments.instrument_emulators import (
 )
 
 from PyQt5.QtCore import (
-    QThread
+    QThread,
+    QObject
 )
 
 
-class InstrumentRegistry:
-    def __init__(self):
+class InstrumentRegistry(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.psu_emulator = PSUEmulator()
         self.camera_emulator = CameraEmulator()
@@ -24,7 +26,7 @@ class InstrumentRegistry:
 
         # Laser emulator needs to have its thread started here since it doesn't have a "driver" wrapper to handle its thread
         self.laser_emulator = LaserEmulator()
-        self._laser_emulator_thread = QThread()
+        self._laser_emulator_thread = QThread(parent=self)
         self.laser_emulator.moveToThread(self._laser_emulator_thread)
         self._laser_emulator_thread.start()
 
@@ -44,6 +46,12 @@ class InstrumentRegistry:
 
         self.laser_emulator.voltage_value_ready.connect(self.psu_emulator.update_voltage)
         self.laser_emulator.power_value_ready.connect(self.power_meter_emulator.base_power_changed)
+
+    def stop_threads(self):
+        self._laser_emulator_thread.exit()
+        self.camera.disconnect()
+        self.psu.disconnect()
+        self.power_meter.disconnect()
 
 
 if __name__ == "__main__":

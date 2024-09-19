@@ -2,9 +2,10 @@ from abc import (
     ABC,
     abstractmethod
 )
+from instruments.instrument_emulators.abc import QABCMeta
 
 
-class AbstractInstrument(ABC):
+class AbstractInstrument(ABC, metaclass=QABCMeta):
 
     @abstractmethod
     def connect(self, connection):

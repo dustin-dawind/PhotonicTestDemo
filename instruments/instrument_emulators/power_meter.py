@@ -35,10 +35,17 @@ class PowerMeterEmulator(QObject, AbstractEmulator):
 
         self.base_power_value = 0
 
-        self.poll_power_timer = QTimer(self)
-        self.poll_power_timer.setInterval(50)
-        self.poll_power_timer.timeout.connect(self.update_power_reading)
-        self.poll_power_timer.start()
+        self._poll_power_timer = QTimer(self)
+        self._poll_power_timer.setInterval(50)
+        self._poll_power_timer.timeout.connect(self.update_power_reading)
+
+    @pyqtSlot()
+    def start_polling(self):
+        self._poll_power_timer.start()
+
+    @pyqtSlot()
+    def stop_polling(self):
+        self._poll_power_timer.stop()
 
     def query(self, command: str):
         try:

@@ -1,9 +1,11 @@
 from instruments.instrument_emulators.abc.abc import (
     AbstractEmulator,
-    Setting
+    Setting,
+    QABCMeta
 )
 
 __all__ = [
     "AbstractEmulator",
-    "Setting"
+    "Setting",
+    "QABCMeta"
 ]

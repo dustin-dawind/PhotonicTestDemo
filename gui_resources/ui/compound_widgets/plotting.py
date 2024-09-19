@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import (
     Qt,
     QTimer,
-    pyqtSlot
+    pyqtSlot,
+    QObject
 )
 
 import pyqtgraph as pg
@@ -46,8 +47,8 @@ class DataPlotterUI(pg.PlotWidget):
 
         self.setBackground('w')
 
-        self.y2_view = pg.ViewBox()
-        self.plotItem.scene().addItem(self.y2_view)
+        self.y2_view = pg.ViewBox(parent=self.plotItem)
+        # self.plotItem.scene().addItem(self.y2_view)
         self.plotItem.getAxis('right').linkToView(self.y2_view)
         self.y2_view.setXLink(self.plotItem)
         self.y2_view.setMouseEnabled(x=False, y=False)
@@ -94,22 +95,23 @@ class DataPlotter(DataPlotterUI):
         self.colormap = cc.glasbey_dark
 
         self.all_data_series: dict[int, DataSeries] = {}
-        self.add_series(starting_device_number)
-        self.active_data_series = starting_device_number
+        # self.add_series(starting_device_number)
+        self.active_data_series = 0
 
         self.plotItem.vb.sigResized.connect(self._updateViews)
 
-    def _debug(self):
-        self.data_counter = 0
-        self.append_data(0, 0, 0)
+    # def _debug(self):
+    #     self.data_counter = 0
+    #     self.append_data(0, 0, 0)
+    #
+    #     self._laser_emulator = LaserEmulator()
+    #     self._laser_emulator._psu_on = True
+    #
+    #     self._add_data_timer = QTimer(self)
+    #     self._add_data_timer.timeout.connect(self.test_add_data)
+    #     self._add_data_timer.start()
 
-        self._laser_emulator = LaserEmulator()
-        self._laser_emulator._psu_on = True
-
-        self.add_data_timer = QTimer(self)
-        self.add_data_timer.timeout.connect(self.test_add_data)
-        self.add_data_timer.start()
-
+    @pyqtSlot(int)
     def add_series(self, device_number: int):
         if device_number in self.all_data_series:
             return

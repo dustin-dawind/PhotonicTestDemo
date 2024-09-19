@@ -55,29 +55,25 @@ class MainWindow(MainWindowUI):
 
         self.instruments = instruments.InstrumentRegistry()
 
-        self.data_monitor = LiveTestDataMonitor(psu=self.instruments.psu,
-                                                power_meter=self.instruments.power_meter
-                                                )
-        self._data_monitor_thread = QThread()
-        self.data_monitor.moveToThread(self._data_monitor_thread)
-        self._data_monitor_thread.started.connect(self.data_monitor.show)
+        self.data_monitor = None
 
     def closeEvent(self, e: QEvent):
-        if not any([True if not isinstance(widget, MainWindow) else False for widget in QApplication.topLevelWidgets()]):
+        confirmation = CloseConfirmation(parent=self)
+        if confirmation.exec_() == QMessageBox.Yes:
+            self.instruments.stop_threads()
             e.accept()
         else:
-            confirmation = CloseConfirmation(parent=self)
-            if confirmation.exec_() == QMessageBox.Yes:
-                e.accept()
-            else:
-                e.ignore()
+            e.ignore()
 
     @staticmethod
     def show_example1():
         analysisfromtoml.launch_cmd()
 
     def show_example2(self):
-        self._data_monitor_thread.start()
+        self.instruments.psu.connect(self.instruments.psu_emulator)
+        self.instruments.power_meter.connect(self.instruments.power_meter_emulator)
+        self.data_monitor = LiveTestDataMonitor(instruments=self.instruments)
+        self.data_monitor.show()
 
     def show_example3(self):
         # TODO:

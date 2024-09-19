@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
 )
 
-class TopBanner(QWidget):
+class TopBannerUI(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout()
@@ -19,15 +19,25 @@ class TopBanner(QWidget):
         font.setPointSize(11)
         self.setFont(font)
 
-        self.script_selector = ScriptSelector()
+        self.script_selector = ScriptSelector(parent=self)
 
-        start_stop = StartStop()
-        self.start_btn = start_stop.start_btn
-        self.stop_btn = start_stop.stop_btn
+        self.start_stop = StartStop(parent=self)
+        self.start_btn = self.start_stop.start_btn
+        self.stop_btn = self.start_stop.stop_btn
 
         layout.addWidget(self.script_selector, stretch=1)
-        layout.addWidget(start_stop)
+        layout.addWidget(self.start_stop)
 
+
+class TopBanner(TopBannerUI):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.start_btn.clicked.connect(self.check_script_path)
+
+    def check_script_path(self):
+        if self.script_selector.script_path_display.text() == '':
+            self.start_stop.toggle_enabled_button()
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication

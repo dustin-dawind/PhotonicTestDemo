@@ -1,10 +1,11 @@
 from typing import NewType
 
+# Can only use these for type hinting => need instruments to be the original instance in order to synchronize everything
 from instruments import psu, power_meter
 
 from PyQt5.QtCore import (
-    QObject,
-    pyqtSignal
+    pyqtSignal,
+    QThread
 )
 
 
@@ -14,8 +15,10 @@ PowerMeterType = NewType('PowerMeterType', power_meter.Instrument)
 PossibleInstruments = PSUType | PowerMeterType
 
 
-class Test(QObject):
-    update_monitor = pyqtSignal(int, float, float, float)
+class Test(QThread):
+    plot_data_signal = pyqtSignal(int, float, float, float)
+    swap_device_signal = pyqtSignal(int)
+
     def __init__(self,
                  num_devices: int = 15,
                  parent=None,
@@ -24,7 +27,6 @@ class Test(QObject):
         super().__init__(parent=parent)
 
         self.num_devices = num_devices
-
 
         for instrument in instruments:
             if instrument == 'power_meter':
@@ -43,7 +45,7 @@ class Test(QObject):
     def run(self):
         self.psu.output = 'ON'
         for device in range(self.num_devices):
-
+            self.swap_device_signal.emit(device + 1)
             for setpoint in range(1201):
                 self.psu.i_setpoint = setpoint
 
@@ -52,7 +54,7 @@ class Test(QObject):
                 i_actual = self.psu.measure_current()
                 v_actual = self.psu.measure_voltage()
 
-                self.update_monitor.emit(device, i_actual, power, v_actual)
+                self.plot_data_signal.emit(device, i_actual, power, v_actual)
 
 
 

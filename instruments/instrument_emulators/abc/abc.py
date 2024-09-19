@@ -26,9 +26,6 @@ class QABCMeta(ABCMeta, type(QObject)):
 
 class AbstractEmulator(ABC, metaclass=QABCMeta):
 
-    def __init__(self, *args, **kwargs):
-        self._response = ""
-
     @abstractmethod
     def query(self, command: str):
         pass

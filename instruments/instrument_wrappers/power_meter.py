@@ -4,9 +4,11 @@ from instruments.instrument_wrappers.abc import AbstractInstrument
 from PyQt5.QtCore import QObject
 
 
-class Instrument(AbstractInstrument):
-    def __init__(self):
-        self._connection = CommunicationHandler()
+class Instrument(QObject, AbstractInstrument):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._connection = CommunicationHandler(parent=self)
 
     def _q(self, command: str) -> str:
         return self._connection.query(command)
@@ -40,4 +42,4 @@ class Instrument(AbstractInstrument):
         return self._q("*IDN?")
 
     def measure(self):
-        return self._q("Measure")
+        return float(self._q("Measure"))

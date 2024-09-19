@@ -1,4 +1,5 @@
 import numpy as np
+
 from PyQt5.QtCore import (
     QObject,
     pyqtSignal,
@@ -12,6 +13,8 @@ class LaserEmulator(QObject):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # -------------- Characteristic parameters --------------
         self._v_th = 0.025852  # This is constant
         self._non_ideal_factor = 0
         self.exp_denom = self._v_th * self._non_ideal_factor
@@ -20,7 +23,9 @@ class LaserEmulator(QObject):
         self._ase_multiplier = 0
         self._slope_eff = 0
         self.i_rev_sat = 0
-        self.swap_device()  # Set characteristic parameters
+        # --------------------------------------------------------
+
+        self.swap_device()  # Initialize characteristic parameters
 
         self._i_current = 0
         self._psu_on = False

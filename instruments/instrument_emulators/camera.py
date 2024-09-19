@@ -11,7 +11,7 @@ from PyQt5.QtCore import (
     QReadWriteLock,
     pyqtSignal,
     QTimer,
-    QMutex
+    QMutex, pyqtSlot
 )
 
 class CameraEmulator(QObject, AbstractEmulator):
@@ -54,15 +54,23 @@ class CameraEmulator(QObject, AbstractEmulator):
         self.fa_jitter = 0
         self.sa_jitter = 0
 
-        self.frame_timer = QTimer(self)
-        self.frame_timer.setInterval(1000 // int(self.settings["FrameRate"].value))  # safe because nothing else will access during init
-        self.frame_timer.timeout.connect(self.generate_image)
-        self.frame_timer.start()
+        self._frame_timer = QTimer(self)
+        self._frame_timer.setInterval(1000 // int(self.settings["FrameRate"].value))  # safe because nothing else will access during init
+        self._frame_timer.timeout.connect(self.generate_image)
 
-        self.jitter_timer = QTimer(self)
-        self.jitter_timer.setInterval(75)
-        self.jitter_timer.timeout.connect(self.set_jitter)
-        self.jitter_timer.start()
+        self._jitter_timer = QTimer(self)
+        self._jitter_timer.setInterval(75)
+        self._jitter_timer.timeout.connect(self.set_jitter)
+
+    @pyqtSlot()
+    def start_polling(self):
+        self._frame_timer.start()
+        self._jitter_timer.start()
+
+    @pyqtSlot()
+    def stop_polling(self):
+        self._frame_timer.stop()
+        self._jitter_timer.stop()
 
     def query(self, command: str):
         try:
@@ -159,7 +167,7 @@ if __name__ == "__main__":
     class CameraDisplay(pg.PlotWidget):
         def __init__(self):
             super().__init__()
-            self.emulator = CameraEmulator
+            self.emulator = CameraEmulator()
 
             self.emulator.query("FrameRate")
 

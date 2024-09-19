@@ -10,12 +10,12 @@ class InstrumentError(Exception):
     pass
 
 
-class CommunicationHandler:
-    def __init__(self):
-        super().__init__()
+class CommunicationHandler(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.emulator = None
-        self.instrument_thread = QThread()
+        self.instrument_thread = QThread(parent=parent)
 
         self.connected = False
 
@@ -46,12 +46,14 @@ class CommunicationHandler:
             try:
                 self._register_emulator(emulator)
             except KeyError:
-                raise ConnectionError(f"F")
+                raise ConnectionError(f"Error connecting to instrument emulator: {emulator}")
             else:
                 self.connected = True
 
     def disconnect(self):
         if self.connected:
+            self.emulator.stop_polling()
+            self.instrument_thread.exit()
             self.emulator = None
             self.connected = False
 

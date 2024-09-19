@@ -47,10 +47,17 @@ class PSUEmulator(QObject, AbstractEmulator):
 
         self._relative_noise = 0.02  # (0.02 == 2%)
 
-        self.poll_settings_timer = QTimer(self)
-        self.poll_settings_timer.setInterval(50)
-        self.poll_settings_timer.timeout.connect(self.update_output_and_current)
-        self.poll_settings_timer.start()
+        self._poll_settings_timer = QTimer(self)
+        self._poll_settings_timer.setInterval(50)
+        self._poll_settings_timer.timeout.connect(self.update_output_and_current)
+
+    @pyqtSlot()
+    def start_polling(self):
+        self._poll_settings_timer.start()
+
+    @pyqtSlot()
+    def stop_polling(self):
+        self._poll_settings_timer.stop()
 
     def query(self, command: str):
         try:
