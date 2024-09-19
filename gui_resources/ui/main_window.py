@@ -1,9 +1,11 @@
 from gui_resources.ui import CloseConfirmation
 import analysisfromtoml
 import instruments
+from gui_resources.ui.data_monitoring import LiveTestDataMonitor
 
 from PyQt5.QtCore import (
     QEvent,
+    QThread
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -53,6 +55,12 @@ class MainWindow(MainWindowUI):
 
         self.instruments = instruments.InstrumentRegistry()
 
+        self.data_monitor = LiveTestDataMonitor(psu=self.instruments.psu,
+                                                power_meter=self.instruments.power_meter
+                                                )
+        self._data_monitor_thread = QThread()
+        self.data_monitor.moveToThread(self._data_monitor_thread)
+        self._data_monitor_thread.started.connect(self.data_monitor.show)
 
     def closeEvent(self, e: QEvent):
         if not any([True if not isinstance(widget, MainWindow) else False for widget in QApplication.topLevelWidgets()]):
@@ -69,9 +77,7 @@ class MainWindow(MainWindowUI):
         analysisfromtoml.launch_cmd()
 
     def show_example2(self):
-        # TODO:
-        #  * Make a live data viewer using pyqtgraph that streams real-time generated data using virtual device drivers
-        pass
+        self._data_monitor_thread.start()
 
     def show_example3(self):
         # TODO:

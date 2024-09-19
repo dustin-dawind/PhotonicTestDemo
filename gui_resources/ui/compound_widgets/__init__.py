@@ -8,5 +8,5 @@ __all__ = [
     "StartStop",
     "ScriptSelector",
     "TopBanner",
-    "LIVDataMonitor"
+    "DataPlotter"
 ]

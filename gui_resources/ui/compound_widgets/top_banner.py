@@ -5,14 +5,14 @@ from gui_resources.ui.compound_widgets import (
 
 from PyQt5.QtWidgets import (
     QWidget,
-    QHBoxLayout
+    QHBoxLayout,
 )
 
 class TopBanner(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-
         layout = QHBoxLayout()
+
         self.setLayout(layout)
 
         font = self.font()
@@ -26,7 +26,7 @@ class TopBanner(QWidget):
         self.stop_btn = start_stop.stop_btn
 
         layout.addWidget(self.script_selector, stretch=1)
-        layout.addWidget(self.start_stop)
+        layout.addWidget(start_stop)
 
 
 if __name__ == "__main__":
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
 
-    window = TopBarUI()
+    window = TopBanner()
     window.show()
 
     sys.exit(app.exec_())

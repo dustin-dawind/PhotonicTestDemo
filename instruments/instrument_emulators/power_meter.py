@@ -75,9 +75,9 @@ class PowerMeterEmulator(QObject, AbstractEmulator):
         self.response_mutex.unlock()
 
     def update_power_reading(self):
-        base_power = self.base_power_value
+        relative_noise = self.base_power_value * 0.02 if self.base_power_value > 0 else 0
 
-        current_power = base_power + np.random.normal(0, self.base_power_value * 0.02)
+        current_power = self.base_power_value + np.random.normal(0, relative_noise)
 
         self.settings_mutex.lockForWrite()
         self.settings["Measure"].value = str(current_power)

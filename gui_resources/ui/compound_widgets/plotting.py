@@ -179,7 +179,7 @@ if __name__ == "__main__":
     from instruments.instrument_emulators.laser import LaserEmulator
     app = QApplication(sys.argv)
 
-    window = LIVDataMonitor()
+    window = DataPlotter()
     window.show()
     window.debug()
 

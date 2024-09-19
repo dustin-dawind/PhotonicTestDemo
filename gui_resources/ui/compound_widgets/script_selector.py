@@ -1,3 +1,5 @@
+import sys
+from pathlib import Path
 from PyQt5.QtCore import (
     pyqtSignal,
     pyqtSlot
@@ -15,10 +17,12 @@ from PyQt5.QtWidgets import (
 is_frozen = getattr(sys, 'frozen', False)
 if is_frozen:
     base_path = Path(sys._MEIPASS)
+elif 'Quintessent' not in str(Path.cwd().parent):
+    base_path = Path.cwd()
 else:
-    base_path = Path.cwd().parents[3]
+    base_path = Path.cwd().parents[2]
 
-PATH_TO_TEST_SCRIPTS = base_path / "test_scripts"
+PATH_TO_TEST_SCRIPTS = str(base_path / "test_scripts")
 
 
 class ScriptSelectorUI(QWidget):

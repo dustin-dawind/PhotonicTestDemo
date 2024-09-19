@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 
 from gui_resources import MainWindow
 from PyQt5.QtWidgets import QApplication
