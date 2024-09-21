@@ -62,6 +62,7 @@ class MainWindow(MainWindowUI):
         if confirmation.exec_() == QMessageBox.Yes:
             self.instruments.stop_threads()
             e.accept()
+            QApplication.exit()
         else:
             e.ignore()
 

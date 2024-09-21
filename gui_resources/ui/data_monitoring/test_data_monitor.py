@@ -19,8 +19,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import (
     pyqtSlot,
     QEvent,
-    QThread,
-    QObject
+    QThread
 )
 
 
@@ -55,7 +54,6 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
 
         self.test_module: ModuleType | None = None
         self.test_class = None
-        self.test_thread = QThread(parent=self)
 
         self._instrument_registry = instruments
         self.used_instruments = {'psu': instruments.psu,
@@ -67,13 +65,22 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
             self.controls.start_btn.clicked.connect(self.used_instruments[instrument]._connection.emulator.start_polling)
 
     def closeEvent(self, event: QEvent):
+        self.stop_test()
+        event.accept()
+
+    @pyqtSlot()
+    def stop_test(self):
+        if self.test_class is not None:
+            if self.test_class.isRunning():
+                self.test_class.quit()
+
+            while self.test_class.isRunning():
+                continue
         for instrument in self.used_instruments:
             self.used_instruments[instrument].disconnect()
-            if self.test_class is not None:
-                self.test_class.exit()
-            event.accept()
 
-    @staticmethod
+        self.test_class = None
+
     def open_warning_popup(self, message: str):
         error_popup = QMessageBox(QMessageBox.Critical,
                                   "Automation Examples - Live Data Streaming",
@@ -81,6 +88,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                                   QMessageBox.Ok
                                   )
         error_popup.exec_()
+        self.controls.start_stop.toggle_enabled_button()
 
     @pyqtSlot()
     def load_test_script(self):
@@ -105,18 +113,19 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                                                 power_meter=self.used_instruments['power_meter']
                                                 )
 
-                    # self.test_class.moveToThread(self.test_thread)
-                    # self.test_thread.started.connect(self.test_class.run)
-                    self.test_class.run()
+                    self._connect_signals()
+                    self.test_class.start()
 
-    def _connect_test_signals(self):
-        self.test_class.plot_data_signal.connect(self.plotter.append_data)
-        self.test_class.swap_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
-        self.test_class.swap_device_signal.connect(self.plotter.add_series)
+    def _connect_signals(self):
+        self.test_class.plot_data_signal[int, float, float].connect(self.plotter.append_data)
+        self.test_class.plot_data_signal[int, float, float, float].connect(self.plotter.append_data)
+        self.test_class.new_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
+        self.controls.stop_btn.clicked.connect(self.stop_test)
+        self.test_class.finished.connect(self.controls.start_stop.toggle_enabled_button)
+        self.test_class.set
 
 
 if __name__ == "__main__":
-    import sys
     app = QApplication(sys.argv)
 
     window = LiveTestDataMonitor()

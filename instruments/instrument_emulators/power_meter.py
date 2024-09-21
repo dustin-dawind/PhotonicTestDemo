@@ -36,7 +36,7 @@ class PowerMeterEmulator(QObject, AbstractEmulator):
         self.base_power_value = 0
 
         self._poll_power_timer = QTimer(self)
-        self._poll_power_timer.setInterval(50)
+        self._poll_power_timer.setInterval(self._timer_interval)
         self._poll_power_timer.timeout.connect(self.update_power_reading)
 
     @pyqtSlot()
@@ -82,9 +82,7 @@ class PowerMeterEmulator(QObject, AbstractEmulator):
         self.response_mutex.unlock()
 
     def update_power_reading(self):
-        relative_noise = self.base_power_value * 0.02 if self.base_power_value > 0 else 0
-
-        current_power = self.base_power_value + np.random.normal(0, relative_noise)
+        current_power = self.base_power_value + np.random.normal(0, 2)
 
         self.settings_mutex.lockForWrite()
         self.settings["Measure"].value = str(current_power)

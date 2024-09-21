@@ -76,7 +76,9 @@ def clear_console():
     """
     console.print("\x1b[H\x1b[2J")
 
+
 ReturnCode = int
+
 
 def verify_input_with_user(input_dict: dict):
 
@@ -147,7 +149,6 @@ def verify_input_with_user(input_dict: dict):
 #  * Write a script that simlulates LIV/Spectra data - outputting them to CSV
 #  * Come up with an example filename structure
 #  * Add rest of wants/needs to this to-do so can keep better track of features still wanted/needed
-
 
 
 if __name__ == "__main__":

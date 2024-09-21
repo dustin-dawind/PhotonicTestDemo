@@ -25,6 +25,7 @@ class QABCMeta(ABCMeta, type(QObject)):
 
 
 class AbstractEmulator(ABC, metaclass=QABCMeta):
+    _timer_interval = 1
 
     @abstractmethod
     def query(self, command: str):

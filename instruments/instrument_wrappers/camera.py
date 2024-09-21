@@ -5,7 +5,7 @@ from instruments.instrument_wrappers.abc import AbstractInstrument
 
 
 class Instrument(AbstractInstrument):
-    instrument_type = "camera"
+
     def __init__(self):
         self._connection = CommunicationHandler()
 

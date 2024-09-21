@@ -42,8 +42,10 @@ class LaserEmulator(QObject):
                 return ase_func(current)
             elif current > self._threshold:
                 return lasing_func(current)
+            else:
+                return 0
         else:
-            return np.random.normal(0, 1)
+            return 0
 
     def _f_v_from_i(self, input_current):
         if self._psu_on:

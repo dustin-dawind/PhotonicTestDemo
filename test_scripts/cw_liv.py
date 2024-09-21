@@ -1,11 +1,11 @@
 from typing import NewType
 
-# Can only use these for type hinting => need instruments to be the original instance in order to synchronize everything
-from instruments import psu, power_meter
+from testing import TestClass
 
-from PyQt5.QtCore import (
-    pyqtSignal,
-    QThread
+# Can only use these for type hinting => need instruments to be the original instance in order to synchronize everything
+from instruments import (
+    psu,
+    power_meter
 )
 
 
@@ -15,10 +15,7 @@ PowerMeterType = NewType('PowerMeterType', power_meter.Instrument)
 PossibleInstruments = PSUType | PowerMeterType
 
 
-class Test(QThread):
-    plot_data_signal = pyqtSignal(int, float, float, float)
-    swap_device_signal = pyqtSignal(int)
-
+class Test(TestClass):
     def __init__(self,
                  num_devices: int = 15,
                  parent=None,
@@ -39,27 +36,38 @@ class Test(QThread):
         if not (hasattr(self, 'power_meter') and hasattr(self, 'psu')):
             raise ValueError(f'A power meter and PSU are required to run {__file__}')
 
+    def start_test(self):
         self.psu.reset()
         self.power_meter.reset()
 
-    def run(self):
+        self.set_axes_titles_signal.emit('Current (mA)', 'Power (mW)', 'Efficiency (%)')
+
         self.psu.output = 'ON'
-        for device in range(self.num_devices):
-            self.swap_device_signal.emit(device + 1)
-            for setpoint in range(1201):
+
+        for device_num in range(1,
+                                self.num_devices + 1
+                                ):
+            self.new_device(device_num)
+            for setpoint in range(1, 1201, 50):
+                self.start_timer()
                 self.psu.i_setpoint = setpoint
 
-                power = self.power_meter.measure()
                 i_set = self.psu.i_setpoint
-                i_actual = self.psu.measure_current()
-                v_actual = self.psu.measure_voltage()
+                i_actual = self.psu.measure_current()  # in mA
+                v_actual = self.psu.measure_voltage()  # in V
+                power = self.power_meter.measure()  # in mW
 
-                self.plot_data_signal.emit(device, i_actual, power, v_actual)
+                eff = (i_actual * v_actual * 1e3) / (power * 1e3)
 
+                self.send_for_plotting(device_num,
+                                       i_actual,
+                                       power,
+                                       eff
+                                       )
+                self.record_time_elapsed(device_num)
 
-
-
-
+        self.psu.output = 'OFF'
+        self.print_analytics()
 
 
 

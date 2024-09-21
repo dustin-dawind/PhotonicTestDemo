@@ -47,7 +47,7 @@ class Instrument(AbstractInstrument):
 
     @output.setter
     def output(self, value):
-        if value := value.upper() in ["ON", "OFF"]:
+        if (value := value.upper()) in ["ON", "OFF"]:
             self._w(f"Output {value}")
         else:
             raise ValueError(f"Value must be 'ON' or 'OFF'. Got: {value}")

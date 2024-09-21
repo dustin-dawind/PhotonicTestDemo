@@ -26,7 +26,7 @@ class CommunicationHandler(QObject):
             except KeyError:
                 raise InstrumentError(f"No response from instrument. command: {command}")
             else:
-                QThread.msleep(50)
+                QThread.msleep(AbstractEmulator._timer_interval + 20)
                 return self.emulator.get_response_buffer()
 
     def write(self, command: str):
@@ -35,7 +35,7 @@ class CommunicationHandler(QObject):
                 if command == "*RST":
                     self.emulator.reset()
             else:
-                if len(split_command :=  command.split(" ")) > 2:
+                if len(split_command := command.split(" ")) > 2:
                     raise InstrumentError(f"Invalid command: {command}")
 
                 setting, value = split_command
