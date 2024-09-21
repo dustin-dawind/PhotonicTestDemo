@@ -119,6 +119,8 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
     def _connect_signals(self):
         self.test_class.plot_data_signal[int, float, float].connect(self.plotter.append_data)
         self.test_class.plot_data_signal[int, float, float, float].connect(self.plotter.append_data)
+        self.test_class.set_axes_titles_signal[str, str].connect(self.plotter.set_axes_titles)
+        self.test_class.set_axes_titles_signal[str, str, str].connect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
         self.test_class.test_finished_signal.connect(self._test_thread.quit)
         self.controls.stop_btn.clicked.connect(self.test_class.test_finished)

@@ -105,21 +105,16 @@ class DataPlotter(DataPlotterUI):
                 return 'mA'
             case 'Voltage':
                 return 'V'
+            case 'Time':
+                return 's'
             case _:
                 return None
 
     @pyqtSlot(str, str)
     @pyqtSlot(str, str, str)
     def set_axes_titles(self, x_title, *y_title: str):
-        match x_title:
-            case 'Time':
-                x_units = 's'
-            case 'Current':
-                x_units = 'mA'
-            case 'Voltage':
-                x_units = 'V'
-        x_units = self._get_title_units(x_title)
 
+        x_units = self._get_title_units(x_title)
         match len(y_title):
             case 1:
                 y1_title = y_title
@@ -137,8 +132,8 @@ class DataPlotter(DataPlotterUI):
         if y2_title is None:
             self.y2_view.hide()
             zip_iter = zip(['bottom', 'left'],
-                           ['Current', y1_title],
-                           ['mA', y1_units]
+                           [x_title, y1_title],
+                           [x_units, y1_units]
                            )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
                                                              width=1
@@ -149,8 +144,8 @@ class DataPlotter(DataPlotterUI):
         else:
             self.y2_view.show()
             zip_iter = zip(['bottom', 'left', 'right'],
-                           ['Current', y1_title, y2_title],
-                           ['mA', y1_units, y2_units]
+                           [x_title, y1_title, y2_title],
+                           [x_units, y1_units, y2_units]
                            )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
                                                              width=1
