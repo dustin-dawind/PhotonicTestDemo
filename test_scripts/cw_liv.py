@@ -1,13 +1,11 @@
 from typing import NewType
 
 from testing import TestClass
-
 # Can only use these for type hinting => need instruments to be the original instance in order to synchronize everything
 from instruments import (
     psu,
     power_meter
 )
-
 
 PSUType = NewType('PSUType', psu.Instrument)
 PowerMeterType = NewType('PowerMeterType', power_meter.Instrument)
@@ -17,13 +15,12 @@ PossibleInstruments = PSUType | PowerMeterType
 
 class Test(TestClass):
     def __init__(self,
-                 num_devices: int = 15,
                  parent=None,
                  **instruments: PossibleInstruments
                  ):
         super().__init__(parent=parent)
 
-        self.num_devices = num_devices
+        self.num_devices = 5
 
         for instrument in instruments:
             if instrument == 'power_meter':
@@ -40,7 +37,7 @@ class Test(TestClass):
         self.psu.reset()
         self.power_meter.reset()
 
-        self.set_axes_titles_signal.emit('Current (mA)', 'Power (mW)', 'Efficiency (%)')
+        self.set_plot_axes_titles('Current', 'Power', 'Efficiency')
 
         self.psu.output = 'ON'
 
@@ -57,7 +54,11 @@ class Test(TestClass):
                 v_actual = self.psu.measure_voltage()  # in V
                 power = self.power_meter.measure()  # in mW
 
-                eff = (i_actual * v_actual * 1e3) / (power * 1e3)
+                eff = 0
+                if (e_power := i_actual * v_actual) != 0:
+                    eff = power / e_power
+                if eff > 1 or eff < 0 or setpoint < 150:
+                    eff = 0
 
                 self.send_for_plotting(device_num,
                                        i_actual,
@@ -68,6 +69,7 @@ class Test(TestClass):
 
         self.psu.output = 'OFF'
         self.print_analytics()
+        self.test_finished()
 
 
 

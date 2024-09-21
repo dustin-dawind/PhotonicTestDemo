@@ -40,8 +40,8 @@ class StartStop(StartStopUI):
                          stop_text=stop_text
                          )
 
-        self.start_btn.clicked.connect(self.toggle_enabled_button)
-        self.stop_btn.clicked.connect(self.toggle_enabled_button)
+        # self.start_btn.clicked.connect(self.toggle_enabled_button)
+        # self.stop_btn.clicked.connect(self.toggle_enabled_button)
 
     def toggle_enabled_button(self):
         if self.start_btn.isEnabled():

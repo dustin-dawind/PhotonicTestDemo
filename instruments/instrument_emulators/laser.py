@@ -49,7 +49,10 @@ class LaserEmulator(QObject):
 
     def _f_v_from_i(self, input_current):
         if self._psu_on:
-            return self.exp_denom * np.log((1 / self.i_rev_sat) * input_current + 1)  # Inverse Shockley diode equation
+            if input_current > 0:
+                return self.exp_denom * np.log((1 / self.i_rev_sat) * input_current + 1)  # Inverse Shockley diode equation
+            else:
+                return 0
         else:
             return 0
 

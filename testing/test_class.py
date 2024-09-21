@@ -4,38 +4,41 @@ import pandas as pd
 from rich import print
 from rich.table import Table
 
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import (
     pyqtSignal,
-    QThread
+    QObject,
+    QTimer, pyqtSlot
 )
 
 
-class TestClass(QThread):
+
+class TestClass(QObject):
     plot_data_signal = pyqtSignal([int, float, float],
                                   [int, float, float, float]
                                   )
     set_axes_titles_signal = pyqtSignal([str, str], [str, str, str])
     new_device_signal = pyqtSignal(int)
 
+    test_finished_signal = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.measurement_times = defaultdict(list)
+        self._start_time = None
+
+        self._process_events_timer = QTimer()
+        self._process_events_timer.timeout.connect(QApplication.processEvents)
+        self._process_events_timer.start(50)
 
     def start_timer(self):
         self._start_time = time.perf_counter()
 
     def record_time_elapsed(self, device_num: int):
-        self.measurement_times[device_num].append(time.perf_counter() - self._start_time)
-
-    def run(self):
-        self.exec()
-
-    def exec(self):
-        try:
-            self.start_test()
-        except Exception as e:
-            print(e)
-            return 1
+        if self._start_time is None:
+            raise ValueError('Performance timer has not been started')
+        else:
+            self.measurement_times[device_num].append(time.perf_counter() - self._start_time)
 
     def start_test(self):
         raise NotImplementedError("This method must be overridden in a child class")
@@ -55,9 +58,9 @@ class TestClass(QThread):
     def set_plot_axes_titles(self, x_title: str, *y_title: str):
         match len(y_title):
             case 1:
-                self.plot_data_signal[str, str].emit(x_title, *y_title)
+                self.set_axes_titles_signal[str, str].emit(x_title, *y_title)
             case 2:
-                self.plot_data_signal[str, str, str].emit(x_title, *y_title)
+                self.set_axes_titles_signal[str, str, str].emit(x_title, *y_title)
             case _:
                 raise ValueError(f'Expected 1 or 2 arguments, got {len(y_title)}')
 
@@ -78,3 +81,7 @@ class TestClass(QThread):
         test_analytics.add_row("[cyan]Total testing time: [/]",
                                f"[yellow]{total: 0.3f} s[/]")
         print(test_analytics)
+
+    @pyqtSlot()
+    def test_finished(self):
+        self.test_finished_signal.emit()

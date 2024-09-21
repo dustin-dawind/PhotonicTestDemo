@@ -54,6 +54,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
 
         self.test_module: ModuleType | None = None
         self.test_class = None
+        self._test_thread = None
 
         self._instrument_registry = instruments
         self.used_instruments = {'psu': instruments.psu,
@@ -61,8 +62,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                                  }
 
         self.controls.start_btn.clicked.connect(self.load_test_script)
-        for instrument in self.used_instruments:
-            self.controls.start_btn.clicked.connect(self.used_instruments[instrument]._connection.emulator.start_polling)
+
+        # for instrument in self.used_instruments:
+        #     self.controls.start_btn.clicked.connect(self.used_instruments[instrument]._connection.instrument_thread.start)
 
     def closeEvent(self, event: QEvent):
         self.stop_test()
@@ -71,15 +73,11 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
     @pyqtSlot()
     def stop_test(self):
         if self.test_class is not None:
-            if self.test_class.isRunning():
-                self.test_class.quit()
-
-            while self.test_class.isRunning():
-                continue
-        for instrument in self.used_instruments:
-            self.used_instruments[instrument].disconnect()
+            if self._test_thread.isRunning():
+                self._test_thread.quit()
 
         self.test_class = None
+        self._test_thread = None
 
     def open_warning_popup(self, message: str):
         error_popup = QMessageBox(QMessageBox.Critical,
@@ -108,21 +106,27 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                 except AttributeError:
                     self.open_warning_popup("Could not find Test class in test script. Please check the script and try again.")
                 else:
-                    self.test_class = TestClass(num_devices=15,
-                                                psu=self.used_instruments['psu'],
+                    self.test_class = TestClass(psu=self.used_instruments['psu'],
                                                 power_meter=self.used_instruments['power_meter']
                                                 )
+                    self._test_thread = QThread()
+                    self.test_class.moveToThread(self._test_thread)
+                    self._test_thread.started.connect(self.test_class.start_test)
 
                     self._connect_signals()
-                    self.test_class.start()
+                    self._test_thread.start()
 
     def _connect_signals(self):
         self.test_class.plot_data_signal[int, float, float].connect(self.plotter.append_data)
         self.test_class.plot_data_signal[int, float, float, float].connect(self.plotter.append_data)
         self.test_class.new_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
+        self.test_class.test_finished_signal.connect(self._test_thread.quit)
+        self.controls.stop_btn.clicked.connect(self.test_class.test_finished)
+
         self.controls.stop_btn.clicked.connect(self.stop_test)
-        self.test_class.finished.connect(self.controls.start_stop.toggle_enabled_button)
-        self.test_class.set
+
+        self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
+        self._test_thread.finished.connect(self.controls.start_stop.toggle_enabled_button)
 
 
 if __name__ == "__main__":
