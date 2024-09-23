@@ -1,13 +1,24 @@
-from PyQt5.QtCore import QObject
-
 from instruments.instrument_emulators import CommunicationHandler
 from instruments.instrument_wrappers.abc import AbstractInstrument
 
+from PyQt5.QtCore import (
+    QObject,
+    pyqtSignal,
+    pyqtSlot
+)
 
-class Instrument(AbstractInstrument):
 
-    def __init__(self):
-        self._connection = CommunicationHandler()
+class Instrument(QObject, AbstractInstrument):
+    start_signal = pyqtSignal()
+    stop_signal = pyqtSignal()
+    started = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._connection = CommunicationHandler(parent=parent)
+        self.start_signal.connect(self._connection.start)
+        self.stop_signal.connect(self._connection.stop)
+        self._connection.started.connect(self._started)
 
     def _q(self, command: str) -> str:
         return self._connection.query(command)
@@ -74,4 +85,14 @@ class Instrument(AbstractInstrument):
 
     def save_image(self, filename: str):
         pass
+
+    def start(self):
+        self.start_signal.emit()
+
+    def stop(self):
+        self.stop_signal.emit()
+
+    @pyqtSlot()
+    def _started(self):
+        self.started.emit('camera')
 

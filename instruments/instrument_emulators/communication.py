@@ -1,6 +1,8 @@
 from PyQt5.QtCore import (
     QThread,
-    QObject, pyqtSignal,
+    QObject,
+    pyqtSlot,
+    pyqtSignal
 )
 
 from instruments.instrument_emulators.abc import AbstractEmulator
@@ -11,6 +13,8 @@ class InstrumentError(Exception):
 
 
 class CommunicationHandler(QObject):
+    started = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -43,12 +47,12 @@ class CommunicationHandler(QObject):
 
     def connect(self, emulator: AbstractEmulator):
         if not self.connected:
-            try:
-                self._register_emulator(emulator)
-            except KeyError:
-                raise ConnectionError(f"Error connecting to instrument emulator: {emulator}")
-            else:
-                self.connected = True
+            if self.emulator is None:
+                try:
+                    self._register_emulator(emulator)
+                except KeyError:
+                    raise ConnectionError(f"Error connecting to instrument emulator: {emulator}")
+            self.connected = True
 
     def disconnect(self):
         if self.connected:
@@ -60,5 +64,15 @@ class CommunicationHandler(QObject):
         self.emulator.moveToThread(self.instrument_thread)
         self.instrument_thread.started.connect(self.emulator.start_polling)
         self.instrument_thread.finished.connect(self.emulator.stop_polling)
+        # self.instrument_thread.start()
+
+    @pyqtSlot()
+    def start(self):
         self.instrument_thread.start()
+        self.started.emit()
+
+    @pyqtSlot()
+    def stop(self):
+        self.instrument_thread.quit()
+
 

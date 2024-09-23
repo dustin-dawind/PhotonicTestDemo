@@ -94,7 +94,9 @@ class DataPlotter(DataPlotterUI):
 
     @pyqtSlot()
     def clear_plot(self):
-        self.plotItem.plot(clear=True)
+        self.all_data_series = {}
+        for plot_item in [self.legend, self.plotItem, self.y2_view]:
+            plot_item.clear()
 
     @staticmethod
     def _get_title_units(title):
@@ -115,25 +117,30 @@ class DataPlotter(DataPlotterUI):
     def set_axes_titles(self, x_title, *y_title: str):
 
         x_units = self._get_title_units(x_title)
+        x_title_w_units = x_title if x_units is None else f"{x_title} ({x_units})"
+
         match len(y_title):
             case 1:
-                y1_title = y_title
+                y1_title = str(y_title)
                 y1_units = self._get_title_units(y1_title)
+                y1_title_w_units = y_title if y1_units is None else f"{y1_title} ({y1_units})"
                 y2_title = None
-                y2_units = self._get_title_units(y1_title)
+                y2_units = None
+                y2_title_w_units = None
             case 2:
                 y1_title = y_title[0]
                 y1_units = self._get_title_units(y1_title)
+                y1_title_w_units = y1_title if y1_units is None else f"{y1_title} ({y1_units})"
                 y2_title = y_title[1]
                 y2_units = self._get_title_units(y2_title)
+                y2_title_w_units = y2_title if y2_units is None else f"{y2_title} ({y2_units})"
             case _:
                 raise ValueError(f'Expected 1 or 2 arguments, got {len(y_title)}')
 
         if y2_title is None:
             self.y2_view.hide()
             zip_iter = zip(['bottom', 'left'],
-                           [x_title, y1_title],
-                           [x_units, y1_units]
+                           [x_title, y1_title]
                            )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
                                                              width=1
@@ -144,8 +151,7 @@ class DataPlotter(DataPlotterUI):
         else:
             self.y2_view.show()
             zip_iter = zip(['bottom', 'left', 'right'],
-                           [x_title, y1_title, y2_title],
-                           [x_units, y1_units, y2_units]
+                           [x_title_w_units, y1_title_w_units, y2_title_w_units],
                            )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
                                                              width=1
@@ -162,15 +168,14 @@ class DataPlotter(DataPlotterUI):
                                 )
 
         label_style = {'font-size': '11pt'}
-        for axis, name, units in zip_iter:
+        for axis, name in zip_iter:
             axis = self.plotItem.getAxis(axis)
-            axis.setLabel(text=name,
-                          units=units,
-                          **label_style
-                          )
             axis.setPen(black_pen := pg.mkPen(color='k'))
             axis.setTextPen(black_pen)
             axis.enableAutoSIPrefix(False)
+            axis.setLabel(text=name,
+                          **label_style
+                          )
 
     def change_active_data_series(self, device_number: int):
         if device_number not in self.all_data_series:

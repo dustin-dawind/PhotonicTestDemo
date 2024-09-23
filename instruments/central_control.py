@@ -31,13 +31,13 @@ class InstrumentRegistry(QObject):
         self._laser_emulator_thread.start()
 
         # Connect instruments to their emulators. The GUI will control the emulators via these "driver" interfaces
-        self.camera = camera.Instrument()
+        self.camera = camera.Instrument(parent=self)
         self.camera.connect(self.camera_emulator)
 
-        self.power_meter = power_meter.Instrument()
+        self.power_meter = power_meter.Instrument(parent=self)
         self.power_meter.connect(self.power_meter_emulator)
 
-        self.psu = psu.Instrument()
+        self.psu = psu.Instrument(parent=self)
         self.psu.connect(self.psu_emulator)
 
         self.psu_emulator.output_changed.connect(self.laser_emulator.psu_status_changed)

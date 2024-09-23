@@ -12,28 +12,34 @@ PowerMeterType = NewType('PowerMeterType', power_meter.Instrument)
 
 PossibleInstruments = PSUType | PowerMeterType
 
-
+"""
+From What I've found online, only the function that is connected to the started signal will be pulled into
+the new thread. This means that any attributes accessed within the start_test function are being access across
+threads, which is not necessarily safe. To avoid this, all data passed into start_test should be either be
+passed in with the function call, or passed via signals/slots.
+"""
 class Test(TestClass):
     def __init__(self,
-                 parent=None,
-                 **instruments: PossibleInstruments
+                 instruments: dict[str, PossibleInstruments]
                  ):
-        super().__init__(parent=parent)
+        super().__init__()
+
+        self.needed_instruments = ('power_meter', 'psu')
+
+        for instrument in self.needed_instruments:
+            if instrument == 'power_meter':
+                self.power_meter = instruments.get(instrument, None)
+            elif instrument == 'psu':
+                self.psu = instruments.get(instrument, None)
+
+        if self.psu is None or self.power_meter is None:
+            raise ValueError(f'PSU and Power Meter must be specified. Got: {instruments}')
+
 
         self.num_devices = 5
 
-        for instrument in instruments:
-            if instrument == 'power_meter':
-                self.power_meter = instruments[instrument]
-            elif instrument == 'psu':
-                self.psu = instruments[instrument]
-            else:
-                raise ValueError(f'Instrument {instrument} not supported by this test')
-
-        if not (hasattr(self, 'power_meter') and hasattr(self, 'psu')):
-            raise ValueError(f'A power meter and PSU are required to run {__file__}')
-
     def start_test(self):
+        # self.test_started_signal.emit(self.needed_instruments)
         self.psu.reset()
         self.power_meter.reset()
 
@@ -45,7 +51,7 @@ class Test(TestClass):
                                 self.num_devices + 1
                                 ):
             self.new_device(device_num)
-            for setpoint in range(1, 1201, 50):
+            for setpoint in range(0, 1201, 50):
                 self.start_timer()
                 self.psu.i_setpoint = setpoint
 
@@ -69,7 +75,5 @@ class Test(TestClass):
 
         self.psu.output = 'OFF'
         self.print_analytics()
-        self.test_finished()
-
-
+        self.test_finished_signal.emit()
 

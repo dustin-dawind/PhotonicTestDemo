@@ -33,12 +33,6 @@ class TopBanner(TopBannerUI):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.start_btn.clicked.connect(self.check_script_path)
-
-    def check_script_path(self):
-        if self.script_selector.script_path_display.text() == '':
-            self.start_stop.toggle_enabled_button()
-
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys

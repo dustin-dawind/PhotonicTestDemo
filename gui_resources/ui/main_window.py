@@ -71,8 +71,6 @@ class MainWindow(MainWindowUI):
         analysisfromtoml.launch_cmd()
 
     def show_example2(self):
-        self.instruments.psu.connect(self.instruments.psu_emulator)
-        self.instruments.power_meter.connect(self.instruments.power_meter_emulator)
         self.data_monitor = LiveTestDataMonitor(instruments=self.instruments)
         self.data_monitor.show()
 

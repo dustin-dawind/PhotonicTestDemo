@@ -7,10 +7,8 @@ from rich.table import Table
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import (
     pyqtSignal,
-    QObject,
-    QTimer, pyqtSlot
+    QObject, pyqtSlot,
 )
-
 
 
 class TestClass(QObject):
@@ -20,16 +18,19 @@ class TestClass(QObject):
     set_axes_titles_signal = pyqtSignal([str, str], [str, str, str])
     new_device_signal = pyqtSignal(int)
 
+    needed_instruments_signal = pyqtSignal(object)
     test_finished_signal = pyqtSignal()
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self,
+                 **instruments):
+        super().__init__()
         self.measurement_times = defaultdict(list)
         self._start_time = None
+        self.needed_instruments = None
+        self.instruments = None
 
-        self._process_events_timer = QTimer()
-        self._process_events_timer.timeout.connect(QApplication.processEvents)
-        self._process_events_timer.start(50)
+    def register_instruments(self):
+        self.needed_instruments_signal.emit(self.needed_instruments)
 
     def start_timer(self):
         self._start_time = time.perf_counter()
@@ -40,7 +41,11 @@ class TestClass(QObject):
         else:
             self.measurement_times[device_num].append(time.perf_counter() - self._start_time)
 
-    def start_test(self):
+    @pyqtSlot(dict)
+    def get_instruments(self, instruments: dict):
+        self.instruments = instruments
+
+    def start_test(self, ):
         raise NotImplementedError("This method must be overridden in a child class")
 
     def new_device(self, device_num: int):
@@ -82,6 +87,10 @@ class TestClass(QObject):
                                f"[yellow]{total: 0.3f} s[/]")
         print(test_analytics)
 
-    @pyqtSlot()
     def test_finished(self):
         self.test_finished_signal.emit()
+
+    # @staticmethod
+    # def process_events():
+    #     QApplication.processEvents()
+
