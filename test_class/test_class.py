@@ -2,6 +2,7 @@
 # from collections import defaultdict
 from pathlib import Path
 import pandas as pd
+from datetime import datetime
 # from rich import print
 # from rich.table import Table
 
@@ -23,8 +24,10 @@ class TestClass(QObject):
     new_device_signal = pyqtSignal(int)
     needed_instruments_signal = pyqtSignal(object)
 
-    test_started_signal = pyqtSignal(str)
-    update_status_signal = pyqtSignal(str)
+    # test_started_signal = pyqtSignal(str)
+    update_progress_bar_max = pyqtSignal(int)
+    update_test_progress_signal = pyqtSignal(int)
+    update_test_status_signal = pyqtSignal(str)
     test_finished_signal = pyqtSignal()
 
     def __init__(self,
@@ -35,6 +38,7 @@ class TestClass(QObject):
         self.needed_instruments = None
         self.instruments = None
         self.user_requested_stop = False
+        self.step_counter = 0
 
     @pyqtSlot()
     def request_stop(self):
@@ -98,20 +102,22 @@ class TestClass(QObject):
     #                            f"[yellow]{total: 0.3f} s[/]")
     #     print(test_analytics)
 
-    def update_status(self, status: str):
-        self.update_status_signal.emit(status)
+    def update_test_progress(self):
+        self.update_test_progress_signal.emit(self.step_counter)
+        self.step_counter += 1
+        QApplication.processEvents()
+
+    def send_total_num_data_points(self, total_num_data_points: int):
+        self.update_progress_bar_max.emit(total_num_data_points)
 
     def test_finished(self):
+        self.update_test_status_signal.emit("Done!")
         self.test_finished_signal.emit()
 
     @staticmethod
     def save_data(data: dict[str, list[str | float]]):
         output = pd.DataFrame.from_dict(data)
-        path = Path.cwd() / "test_data"
+        path = Path.cwd() / "test_results"
 
-        output.to_csv(path / 'data.csv', index=False)
-
-    @staticmethod
-    def process_events():
-        QApplication.processEvents()
+        output.to_csv(path / f'data{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv', index=False)
 

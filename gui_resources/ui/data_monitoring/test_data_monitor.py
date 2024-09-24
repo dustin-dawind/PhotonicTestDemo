@@ -46,7 +46,6 @@ class LiveTestDataMonitorUI(QWidget):
         layout.addWidget(h_divider)
         layout.addWidget(self.plotter, stretch=1)
 
-        self.controls.status_readout.change_text("Idle")
 
 class LiveTestDataMonitor(LiveTestDataMonitorUI):
     test_ready_to_start = pyqtSignal()
@@ -111,7 +110,6 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
             path = Path(path)
             self.device_definitions = pd.read_csv(path)
 
-
     @pyqtSlot()
     def load_test_script(self):
         path = self.controls.test_script_selector.file_path_display.text()
@@ -134,10 +132,6 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                                                 device_definitions=self.device_definitions
                                                 )
 
-                    # while not all([self.instruments_started[instrument] for instrument in self.test_class.needed_instruments]):
-                    #     QThread.msleep(10)
-
-
                     self._test_thread = QThread()
                     self.test_class.moveToThread(self._test_thread)
 
@@ -154,7 +148,10 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.test_class.set_axes_titles_signal[str, str, str].connect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
         self.test_class.needed_instruments_signal.connect(self.start_instruments)
-        self.test_class.update_status_signal.connect(self.update_status)
+        self.test_class.update_test_status_signal.connect(self.update_status)
+        self.test_class.update_test_progress_signal.connect(self.update_progress_value)
+        self.test_class.update_progress_bar_max.connect(self.set_progress_maximum)
+
         self.test_class.test_finished_signal.connect(self.stop_instruments)
         self.test_class.test_finished_signal.connect(self._test_thread.quit)
 
@@ -165,11 +162,12 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.request_stop.connect(self.test_class.request_stop)
 
         self._test_thread.started.connect(self.test_class.start_test)
+        self._test_thread.started.connect(self.controls.disable_file_selection)
         self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self._test_thread.deleteLater)
+        self._test_thread.finished.connect(self.controls.enable_file_selection)
         self._test_thread.finished.connect(self._disconnect_signals)
-
 
     def _disconnect_signals(self):
         self.test_class.plot_data_signal[int, float, float].disconnect(self.plotter.append_data)
@@ -178,7 +176,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.test_class.set_axes_titles_signal[str, str, str].disconnect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.disconnect(self._instrument_registry.laser_emulator.swap_device)
         self.test_class.needed_instruments_signal.disconnect(self.start_instruments)
-        self.test_class.update_status_signal.disconnect(self.update_status)
+        self.test_class.update_test_status_signal.disconnect(self.update_status)
+        self.test_class.update_test_progress_signal.disconnect(self.update_progress_value)
+        self.test_class.update_progress_bar_max.disconnect(self.set_progress_maximum)
         self.test_class.test_finished_signal.disconnect(self.stop_instruments)
         self.test_class.test_finished_signal.disconnect(self._test_thread.quit)
 
@@ -189,9 +189,11 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.request_stop.disconnect(self.test_class.request_stop)
 
         self._test_thread.started.disconnect(self.test_class.start_test)
+        self._test_thread.started.disconnect(self.controls.disable_file_selection)
         self._test_thread.started.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self._test_thread.deleteLater)
+        self._test_thread.finished.disconnect(self.controls.enable_file_selection)
         self._test_thread.finished.disconnect(self._disconnect_signals)
 
     @pyqtSlot(object)
@@ -213,9 +215,20 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         if self._active_instruments == self.test_class.needed_instruments:
             self.test_ready_to_start.emit()
 
+    @pyqtSlot(int)
+    def set_progress_maximum(self,
+                             max_value: int
+                             ):
+        self.controls.set_progress_maximum(max_value)
+
+    @pyqtSlot(int)
+    def update_progress_value(self, value: int):
+        self.controls.update_progress_value(value)
+
     @pyqtSlot(str)
     def update_status(self, status: str):
-        self.controls.update_status(status)
+        self.controls.change_progress_status(status)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

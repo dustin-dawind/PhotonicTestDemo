@@ -25,8 +25,7 @@ class Test(TestClass):
 
         self.needed_instruments = ('power_meter', 'psu')
 
-
-        self.devices = device_definitions
+        self.DUTs = device_definitions
 
         for instrument in self.needed_instruments:
             if instrument == 'power_meter':
@@ -37,33 +36,27 @@ class Test(TestClass):
         if self.psu is None or self.power_meter is None:
             raise ValueError(f'PSU and Power Meter must be specified. Got: {instruments}')
 
-        self.num_devices = 5
-
         self.data = defaultdict(list)
 
     def start_test(self):
         self.psu.reset()
         self.power_meter.reset()
 
-        self.set_plot_axes_titles('Current', 'Power', 'Efficiency')
+        self.set_plot_axes_titles('Current',
+                                  'Power',
+                                  'Efficiency'
+                                  )
 
         self.psu.output = 'ON'
 
-        self.update_status("...")
-        current_device = None
-        for index, row in self.devices.iterrows():
+        # current_device = None
+        test_setpoints = list(range(0, 1201, 50))
+        self.send_total_num_data_points(len(test_setpoints) * len(self.DUTs.index))
+        for index, row in self.DUTs.iterrows():
             # if row["Device ID"] != current_device:
             #     self.new_device(current_device := (row["Field ID"] * 1e3 + row["Device ID"]))
-            if index == 5:
-                break
 
-            for setpoint in range(0, 1201, 50):
-                self.process_events()
-                if self.user_requested_stop:
-                    self.psu.output = 'OFF'
-                    self.update_status("Stopped!")
-                    self.test_finished()
-                    return
+            for setpoint in test_setpoints:
 
                 # self.start_timer()
                 self.psu.i_setpoint = setpoint
@@ -94,9 +87,14 @@ class Test(TestClass):
                 self.data["Measured Power (mW)"].append(power)
                 self.data["Efficiency"].append(eff)
 
+                self.update_test_progress()
+                if self.user_requested_stop:
+                    self.psu.output = 'OFF'
+                    self.test_finished()
+                    return
+
         self.psu.output = 'OFF'
         # self.print_analytics()
         self.save_data(self.data)
-        self.update_status("Done!")
         self.test_finished()
 

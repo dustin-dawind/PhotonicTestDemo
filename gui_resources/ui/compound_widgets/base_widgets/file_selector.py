@@ -10,7 +10,8 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 from PyQt5.QtCore import (
-    Qt
+    Qt,
+    pyqtSignal
 )
 
 # Check if the script is being run in a frozen environment (e.g. as an executable)
@@ -50,6 +51,8 @@ class FileSelectorUINoLayout(QWidget):
 
 
 class FileSelectorObject(FileSelectorUINoLayout):
+    selected_file_changed = pyqtSignal()
+
     def __init__(self,
                  label_base: str,
                  file_type: Literal["Python", "CSV"] = "Python",
@@ -78,6 +81,7 @@ class FileSelectorObject(FileSelectorUINoLayout):
                                                   options=QFileDialog.HideNameFilterDetails | QFileDialog.ReadOnly
                                                   )
         self.file_path_display.setText(filepath)
+        self.selected_file_changed.emit()
 
 
 if __name__ == "__main__":

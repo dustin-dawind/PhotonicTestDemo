@@ -17,15 +17,17 @@ class StartStopUI(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-
         self.start_btn = QPushButton(start_text)
         self.start_btn.setSizePolicy(QSizePolicy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
+        self.start_btn.setContentsMargins(5, 2, 2, 2)
 
         self.stop_btn = QPushButton(stop_text)
         self.stop_btn.setSizePolicy(QSizePolicy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
+        self.stop_btn.setContentsMargins(5, 2, 2, 2)
         self.stop_btn.setEnabled(False)
 
         layout.addWidget(self.start_btn)
+        layout.addStretch(1)
         layout.addWidget(self.stop_btn)
 
 
