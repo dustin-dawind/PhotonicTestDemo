@@ -1,3 +1,5 @@
+class EmptyObject(object):
+    pass
 
 
 def fix_line_edit_width(line_edit, length=10):

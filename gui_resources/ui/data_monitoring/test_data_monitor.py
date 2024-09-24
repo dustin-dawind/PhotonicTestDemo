@@ -2,6 +2,7 @@ import sys
 import importlib.util
 from types import ModuleType
 from pathlib import Path
+import pandas as pd
 
 from instruments import InstrumentRegistry
 
@@ -45,6 +46,7 @@ class LiveTestDataMonitorUI(QWidget):
         layout.addWidget(h_divider)
         layout.addWidget(self.plotter, stretch=1)
 
+        self.controls.status_readout.change_text("Idle")
 
 class LiveTestDataMonitor(LiveTestDataMonitorUI):
     test_ready_to_start = pyqtSignal()
@@ -62,12 +64,15 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
 
         self._active_instruments = ()
 
+        self.device_definitions = None
+
         self._instrument_registry = instruments
         self.instruments = {'psu'        : instruments.psu,
                             'power_meter': instruments.power_meter,
                             'camera'     : instruments.camera
                             }
 
+        self.controls.start_btn.clicked.connect(self.load_device_definitions)
         self.controls.start_btn.clicked.connect(self.load_test_script)
         self.controls.start_btn.clicked.connect(self.plotter.clear_plot)
 
@@ -100,8 +105,16 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.controls.start_stop.toggle_enabled_button()
 
     @pyqtSlot()
+    def load_device_definitions(self):
+        path = self.controls.device_definition_selector.file_path_display.text()
+        if path != '':
+            path = Path(path)
+            self.device_definitions = pd.read_csv(path)
+
+
+    @pyqtSlot()
     def load_test_script(self):
-        path = self.controls.script_selector.script_path_display.text()
+        path = self.controls.test_script_selector.file_path_display.text()
         if path != '':
             path = Path(path)
             try:
@@ -117,7 +130,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                 except AttributeError:
                     self.open_warning_popup("Could not find Test class in test script. Please check the script and try again.")
                 else:
-                    self.test_class = TestClass(self.instruments)
+                    self.test_class = TestClass(instruments=self.instruments,
+                                                device_definitions=self.device_definitions
+                                                )
 
                     # while not all([self.instruments_started[instrument] for instrument in self.test_class.needed_instruments]):
                     #     QThread.msleep(10)
@@ -139,6 +154,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.test_class.set_axes_titles_signal[str, str, str].connect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
         self.test_class.needed_instruments_signal.connect(self.start_instruments)
+        self.test_class.update_status_signal.connect(self.update_status)
         self.test_class.test_finished_signal.connect(self.stop_instruments)
         self.test_class.test_finished_signal.connect(self._test_thread.quit)
 
@@ -147,14 +163,13 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.test_ready_to_start.connect(self._test_thread.start)
         self.controls.stop_btn.clicked.connect(self.stop_test)
         self.request_stop.connect(self.test_class.request_stop)
-        # self.controls.stop_btn.clicked.connect(self._test_thread.quit)
 
         self._test_thread.started.connect(self.test_class.start_test)
         self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self._test_thread.deleteLater)
         self._test_thread.finished.connect(self._disconnect_signals)
-        # self._test_thread.finished.connect(self.purge_test_class)
+
 
     def _disconnect_signals(self):
         self.test_class.plot_data_signal[int, float, float].disconnect(self.plotter.append_data)
@@ -163,21 +178,21 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.test_class.set_axes_titles_signal[str, str, str].disconnect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.disconnect(self._instrument_registry.laser_emulator.swap_device)
         self.test_class.needed_instruments_signal.disconnect(self.start_instruments)
+        self.test_class.update_status_signal.disconnect(self.update_status)
         self.test_class.test_finished_signal.disconnect(self.stop_instruments)
         self.test_class.test_finished_signal.disconnect(self._test_thread.quit)
 
         for instrument in self.instruments:
             self.instruments[instrument].started.disconnect(self.instrument_started)
         self.test_ready_to_start.disconnect(self._test_thread.start)
+        self.controls.stop_btn.clicked.disconnect(self.stop_test)
         self.request_stop.disconnect(self.test_class.request_stop)
 
         self._test_thread.started.disconnect(self.test_class.start_test)
         self._test_thread.started.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self._test_thread.deleteLater)
-
-    # def purge_test_class(self):
-    #     self.test_class = None
+        self._test_thread.finished.disconnect(self._disconnect_signals)
 
     @pyqtSlot(object)
     def start_instruments(self, instruments: tuple[str, ...]):
@@ -198,6 +213,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         if self._active_instruments == self.test_class.needed_instruments:
             self.test_ready_to_start.emit()
 
+    @pyqtSlot(str)
+    def update_status(self, status: str):
+        self.controls.update_status(status)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,6 +1,6 @@
 from gui_resources.ui.compound_widgets import utils
 
-from gui_resources.ui.compound_widgets import (
+from gui_resources.ui.compound_widgets.base_widgets import (
     MinMaxSliderObject,
     UnderlinedLabel,
 )

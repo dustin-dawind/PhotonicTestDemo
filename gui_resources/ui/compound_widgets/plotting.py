@@ -50,14 +50,13 @@ class DataPlotterUI(pg.PlotWidget):
         super().__init__(parent)
 
         self.plotItem.setTitle("<span style='font-size: 16pt'>Real-Time Data Monitor</span>", color='k')
-        self.plotItem.showAxis('right')
+        # self.plotItem.showAxis('right')
 
         self.setBackground('w')
 
         self.y2_view = pg.ViewBox(parent=self.plotItem)
         self.plotItem.getAxis('right').linkToView(self.y2_view)
         self.y2_view.setXLink(self.plotItem)
-        # self.plotItem.scene().addItem(self.y2_view)
         self.y2_view.setMouseEnabled(x=False, y=False)
         self.plotItem.vb.setMouseEnabled(x=False, y=False)
 
@@ -70,6 +69,10 @@ class DataPlotterUI(pg.PlotWidget):
         self.legend.hide()
 
         self._update_views()
+
+        for axis in self.plotItem.axes:
+            self.plotItem.getAxis(axis).setPen(black_pen := pg.mkPen(color='k'))
+            self.plotItem.getAxis(axis).setTextPen(black_pen)
 
 
 class DataPlotter(DataPlotterUI):
@@ -136,6 +139,7 @@ class DataPlotter(DataPlotterUI):
                 y2_units = None
                 y2_title_w_units = None
             case 2:
+                self.plotItem.showAxis('right')
                 y1_title = y_title[0]
                 y1_units = self._get_title_units(y1_title)
                 y1_title_w_units = y1_title if y1_units is None else f"{y1_title} ({y1_units})"
@@ -178,8 +182,6 @@ class DataPlotter(DataPlotterUI):
         label_style = {'font-size': '11pt'}
         for axis, name in zip_iter:
             axis = self.plotItem.getAxis(axis)
-            axis.setPen(black_pen := pg.mkPen(color='k'))
-            axis.setTextPen(black_pen)
             axis.enableAutoSIPrefix(False)
             axis.setLabel(text=name,
                           **label_style

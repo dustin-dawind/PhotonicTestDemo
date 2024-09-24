@@ -1,5 +1,5 @@
 from gui_resources.ui.compound_widgets import utils
-from gui_resources.ui.compound_widgets.float_slider import FloatSlider
+from gui_resources.ui.compound_widgets.base_widgets.float_slider import FloatSlider
 from rich import print
 from PyQt5.QtWidgets import (
     QLineEdit,
