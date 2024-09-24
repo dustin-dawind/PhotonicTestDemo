@@ -7,17 +7,14 @@ from instruments import (
     power_meter
 )
 
+from PyQt5.QtWidgets import QApplication
+
 PSUType = NewType('PSUType', psu.Instrument)
 PowerMeterType = NewType('PowerMeterType', power_meter.Instrument)
 
 PossibleInstruments = PSUType | PowerMeterType
 
-"""
-From What I've found online, only the function that is connected to the started signal will be pulled into
-the new thread. This means that any attributes accessed within the start_test function are being access across
-threads, which is not necessarily safe. To avoid this, all data passed into start_test should be either be
-passed in with the function call, or passed via signals/slots.
-"""
+
 class Test(TestClass):
     def __init__(self,
                  instruments: dict[str, PossibleInstruments]
@@ -35,7 +32,6 @@ class Test(TestClass):
         if self.psu is None or self.power_meter is None:
             raise ValueError(f'PSU and Power Meter must be specified. Got: {instruments}')
 
-
         self.num_devices = 5
 
     def start_test(self):
@@ -52,6 +48,12 @@ class Test(TestClass):
                                 ):
             self.new_device(device_num)
             for setpoint in range(0, 1201, 50):
+                self.process_events()
+                if self.user_requested_stop:
+                    self.psu.output = 'OFF'
+                    self.test_finished()
+                    return
+
                 self.start_timer()
                 self.psu.i_setpoint = setpoint
 
@@ -75,5 +77,5 @@ class Test(TestClass):
 
         self.psu.output = 'OFF'
         self.print_analytics()
-        self.test_finished_signal.emit()
+        self.test_finished()
 

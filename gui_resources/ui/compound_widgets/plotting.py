@@ -6,6 +6,7 @@ from PyQt5.QtCore import (
     Qt,
     pyqtSlot,
 )
+from PyQt5.QtWidgets import QApplication
 
 
 class DataSeries:
@@ -56,12 +57,19 @@ class DataPlotterUI(pg.PlotWidget):
         self.y2_view = pg.ViewBox(parent=self.plotItem)
         self.plotItem.getAxis('right').linkToView(self.y2_view)
         self.y2_view.setXLink(self.plotItem)
+        # self.plotItem.scene().addItem(self.y2_view)
         self.y2_view.setMouseEnabled(x=False, y=False)
         self.plotItem.vb.setMouseEnabled(x=False, y=False)
 
-        self.legend = self.plotItem.addLegend(offset=(-10,-10), horSpacing=20, verSpacing=-5)
+        self.legend = self.plotItem.addLegend(offset=(-10, -10),
+                                              horSpacing=20,
+                                              verSpacing=-5
+                                              )
         self.legend.setLabelTextColor('k')
         self.legend.setBrush((200, 200, 200, 75))
+        self.legend.hide()
+
+        self._update_views()
 
 
 class DataPlotter(DataPlotterUI):
@@ -74,11 +82,10 @@ class DataPlotter(DataPlotterUI):
         self.total_devices = total_devices
 
         self.colormap = cc.glasbey_dark
-
         self.all_data_series: dict[int, DataSeries] = {}
-        self.active_data_series = 0
+        self.active_data_series = None
 
-        self.plotItem.vb.sigResized.connect(self._updateViews)
+        self.plotItem.vb.sigResized.connect(self._update_views)
 
     @pyqtSlot(int)
     def add_series(self, device_number: int):
@@ -95,6 +102,7 @@ class DataPlotter(DataPlotterUI):
     @pyqtSlot()
     def clear_plot(self):
         self.all_data_series = {}
+        self.active_data_series = None
         for plot_item in [self.legend, self.plotItem, self.y2_view]:
             plot_item.clear()
 
@@ -208,12 +216,13 @@ class DataPlotter(DataPlotterUI):
             self.change_active_data_series(device_num)
         self.all_data_series[self.active_data_series].append(x, *y)
 
-    def _updateViews(self):
+        if not self.legend.isVisible():
+            self.legend.show()
+
+        if len(y) > 1:  # Meaning data is being plotted on a secondary y-axis
+            self.y2_view.autoRange()
+
+    def _update_views(self):
         self.y2_view.setGeometry(self.plotItem.vb.sceneBoundingRect())
         self.y2_view.linkedViewChanged(self.plotItem.vb, self.y2_view.XAxis)
-
-
-
-
-
 

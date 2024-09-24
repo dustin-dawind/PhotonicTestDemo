@@ -11,6 +11,10 @@ from PyQt5.QtCore import (
 )
 
 
+class UserRequestedStopError(Exception):
+    pass
+
+
 class TestClass(QObject):
     plot_data_signal = pyqtSignal([int, float, float],
                                   [int, float, float, float]
@@ -28,6 +32,11 @@ class TestClass(QObject):
         self._start_time = None
         self.needed_instruments = None
         self.instruments = None
+        self.user_requested_stop = False
+
+    @pyqtSlot()
+    def request_stop(self):
+        self.user_requested_stop = True
 
     def register_instruments(self):
         self.needed_instruments_signal.emit(self.needed_instruments)
@@ -90,7 +99,7 @@ class TestClass(QObject):
     def test_finished(self):
         self.test_finished_signal.emit()
 
-    # @staticmethod
-    # def process_events():
-    #     QApplication.processEvents()
+    @staticmethod
+    def process_events():
+        QApplication.processEvents()
 

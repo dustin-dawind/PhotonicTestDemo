@@ -48,6 +48,8 @@ class LiveTestDataMonitorUI(QWidget):
 
 class LiveTestDataMonitor(LiveTestDataMonitorUI):
     test_ready_to_start = pyqtSignal()
+    request_stop = pyqtSignal()
+
     def __init__(self,
                  parent=None,
                  instruments: InstrumentRegistry = None
@@ -76,15 +78,17 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
 
         self._connected_signals = []
 
-    # def closeEvent(self, event: QEvent):
-    #     self.stop_test()
-    #     event.accept()
+    def closeEvent(self, event: QEvent):
+        if self.test_class is not None:
+            self.stop_test()
+        event.accept()
 
-    # @pyqtSlot()
-    # def stop_test(self):
-    #     if self.test_class is not None:
-    #
-    #     self.test_class = None
+    @pyqtSlot()
+    def stop_test(self):
+        if self.test_class is not None:
+            self.request_stop.emit()
+
+        # self.test_class = None
 
     def open_warning_popup(self, message: str):
         error_popup = QMessageBox(QMessageBox.Critical,
@@ -126,6 +130,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                     self.test_class.register_instruments()
 
     def _connect_signals(self):
+        # all of these signals need to be manually disconnected because they are connected every time the script is
+        # loaded, meaning they will double-up if not explicitly disconnected whenever the test script is stopped
+
         self.test_class.plot_data_signal[int, float, float].connect(self.plotter.append_data)
         self.test_class.plot_data_signal[int, float, float, float].connect(self.plotter.append_data)
         self.test_class.set_axes_titles_signal[str, str].connect(self.plotter.set_axes_titles)
@@ -138,7 +145,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         for instrument in self.instruments:
             self.instruments[instrument].started.connect(self.instrument_started)
         self.test_ready_to_start.connect(self._test_thread.start)
-        self.controls.stop_btn.clicked.connect(self._test_thread.quit)
+        self.controls.stop_btn.clicked.connect(self.stop_test)
+        self.request_stop.connect(self.test_class.request_stop)
+        # self.controls.stop_btn.clicked.connect(self._test_thread.quit)
 
         self._test_thread.started.connect(self.test_class.start_test)
         self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
@@ -160,13 +169,12 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         for instrument in self.instruments:
             self.instruments[instrument].started.disconnect(self.instrument_started)
         self.test_ready_to_start.disconnect(self._test_thread.start)
-        self.controls.stop_btn.clicked.disconnect(self._test_thread.quit)
+        self.request_stop.disconnect(self.test_class.request_stop)
 
         self._test_thread.started.disconnect(self.test_class.start_test)
         self._test_thread.started.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self._test_thread.deleteLater)
-        # self._test_thread.finished.disconnect(self.purge_test_class)
 
     # def purge_test_class(self):
     #     self.test_class = None
