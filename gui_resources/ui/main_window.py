@@ -20,6 +20,12 @@ class MainWindowUI(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        """
+        self.setWindowTitle(' ')
+        logo_path = str(current_directory.parent / 'pictures/fp_logo_ico.png')
+        icon = QIcon(str(logo_path))
+        self.setWindowIcon(icon)
+        """
         self.setWindowTitle("Automation Examples")
 
         font = self.font()
