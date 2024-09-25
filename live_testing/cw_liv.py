@@ -49,15 +49,13 @@ class Test(TestClass):
 
         self.psu.output = 'ON'
 
-        # current_device = None
         test_setpoints = list(range(0, 1201, 50))
         self.send_total_num_data_points(len(test_setpoints) * len(self.DUTs.index))
+        self.start_timer()
         for index, row in self.DUTs.iterrows():
             self.new_device(row)
 
             for setpoint in test_setpoints:
-
-                # self.start_timer()
                 self.psu.i_setpoint = setpoint
 
                 i_set = self.psu.i_setpoint
@@ -93,7 +91,7 @@ class Test(TestClass):
                     return
 
         self.psu.output = 'OFF'
-        # self.print_analytics()
         self.save_data(self.data)
+        self.print_analytics()
         self.test_finished()
 

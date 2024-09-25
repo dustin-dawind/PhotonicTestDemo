@@ -1,10 +1,9 @@
-# import time
-# from collections import defaultdict
+import time
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
-# from rich import print
-# from rich.table import Table
+from rich import print
+from rich.table import Table
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import (
@@ -24,7 +23,6 @@ class TestClass(QObject):
     new_device_signal = pyqtSignal(pd.Series)
     needed_instruments_signal = pyqtSignal(object)
 
-    # test_started_signal = pyqtSignal(str)
     update_progress_bar_max = pyqtSignal(int)
     update_test_progress_signal = pyqtSignal(int)
     update_test_status_signal = pyqtSignal(str)
@@ -33,7 +31,6 @@ class TestClass(QObject):
     def __init__(self,
                  **instruments):
         super().__init__()
-        # self.measurement_times = pd.DataFrame(columns=["Wafer ID", "Field ID", "Device ID", "Time (s)"])
         self._start_time = None
         self.needed_instruments = None
         self.instruments = None
@@ -47,14 +44,8 @@ class TestClass(QObject):
     def register_instruments(self):
         self.needed_instruments_signal.emit(self.needed_instruments)
 
-    # def start_timer(self):
-    #     self._start_time = time.perf_counter()
-    #
-    # def record_time_elapsed(self, device_num: int):
-    #     if self._start_time is None:
-    #         raise ValueError('Performance timer has not been started')
-    #     else:
-    #         self.measurement_times[device_num].append(time.perf_counter() - self._start_time)
+    def start_timer(self):
+        self._start_time = time.perf_counter()
 
     @pyqtSlot(dict)
     def get_instruments(self, instruments: dict):
@@ -84,23 +75,20 @@ class TestClass(QObject):
             case _:
                 raise ValueError(f'Expected 1 or 2 arguments, got {len(y_title)}')
 
-    # def print_analytics(self):
-    #     measurement_times = pd.DataFrame(self.measurement_times)
-    #
-    #     mean = measurement_times.values.mean() * 1000
-    #     mean_err = measurement_times.values.std() * 1000
-    #     total = measurement_times.values.sum()
-    #
-    #     print()
-    #     test_analytics = Table(title='[magenta]Test Analytics[/]',
-    #                            show_header=False,
-    #                            show_lines=True
-    #                            )
-    #     test_analytics.add_row("[cyan]Avg. time per measurement: [/]",
-    #                            f"[yellow]{mean: 0.1f} ms \u00B1{mean_err: 0.1f} ms[/]")
-    #     test_analytics.add_row("[cyan]Total testing time: [/]",
-    #                            f"[yellow]{total: 0.3f} s[/]")
-    #     print(test_analytics)
+    def print_analytics(self):
+        total = time.perf_counter() - self._start_time
+        mean = total / self.step_counter
+
+        print()
+        test_analytics = Table(title='[magenta]Test Analytics[/]',
+                               show_header=False,
+                               show_lines=True
+                               )
+        test_analytics.add_row("[cyan]Avg. time per measurement: [/]",
+                               f"[yellow]{mean * 1000: 0.2f} ms[/]")
+        test_analytics.add_row("[cyan]Total testing time: [/]",
+                               f"[yellow]{total: 0.2f} s[/]")
+        print(test_analytics)
 
     def update_test_progress(self):
         self.update_test_progress_signal.emit(self.step_counter)
