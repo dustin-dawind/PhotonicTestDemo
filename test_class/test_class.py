@@ -132,7 +132,7 @@ class TestClass(QObject):
         full_filepath = self.save_directory / f'{filename}_{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv'
         output = pd.DataFrame.from_dict(self.data)
         output.to_csv(full_filepath, index=False)
-        print(f"\n[bright_magenta]Results saved to {full_filepath}[/]")
+        print(f"\n[bright_magenta]Results saved to[/] [bright_green]'{full_filepath}'[/]")
         self.test_finished()
 
     def _print_time_analytics(self, start_time):
@@ -149,6 +149,7 @@ class TestClass(QObject):
             test_analytics.add_row("[bright_cyan]Total testing time: [/]",
                                    f"[bright_yellow]{total :0.2f} s[/]")
             print(test_analytics)
+
 
 def standard_test(overloaded_run_test):
     @functools.wraps(overloaded_run_test)

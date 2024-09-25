@@ -40,6 +40,7 @@ def launch_cmd():
     path_to_module = path_to_package / Path(r"analysis_from_toml.py")
     os.system(f"start cmd.exe /k python \"{path_to_module}\"")
 
+
 def get_config_from_toml():
     """Reads configuration settings from config.toml, sets `config_vars`, and returns the contents of config.toml
 
@@ -57,6 +58,7 @@ def get_config_from_toml():
     config_vars["use_sublime"] = config["edit_with_sublime_text"]
 
     return config
+
 
 def clear_console():
     """Clears the console window.
