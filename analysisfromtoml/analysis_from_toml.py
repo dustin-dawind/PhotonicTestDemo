@@ -30,8 +30,8 @@ path_to_notepad_plus_plus = Path(r'C:\Program Files\Sublime Text\sublime_text.ex
 
 
 config_vars = {
-    "LIV_DIR"    : None,
-    "SPECTRA_DIR": None,
+    "LIV_DATA"    : None,
+    "REV_IV_DATA": None,
     "OUTPUT_PATH": None,
 }
 
@@ -39,7 +39,6 @@ config_vars = {
 def launch_cmd():
     path_to_module = path_to_package / Path(r"analysis_from_toml.py")
     os.system(f"start cmd.exe /k python \"{path_to_module}\"")
-
 
 def get_config_from_toml():
     """Reads configuration settings from config.toml, sets `config_vars`, and returns the contents of config.toml
