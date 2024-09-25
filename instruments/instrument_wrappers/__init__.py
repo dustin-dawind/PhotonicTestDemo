@@ -1,11 +1,11 @@
-from instruments.instrument_wrappers import psu
-from instruments.instrument_wrappers import camera
-from instruments.instrument_wrappers import power_meter
+from instruments.instrument_wrappers.psu import PSU
+from instruments.instrument_wrappers.camera import Camera
+from instruments.instrument_wrappers.power_meter import PowerMeter
 
 __all__ = [
-    "psu",
-    "camera",
-    "power_meter"
+    "PSU",
+    "Camera",
+    "PowerMeter"
 ]
 
 

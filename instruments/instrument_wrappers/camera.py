@@ -8,7 +8,7 @@ from PyQt5.QtCore import (
 )
 
 
-class Instrument(QObject, AbstractInstrument):
+class Camera(QObject, AbstractInstrument):
     start_signal = pyqtSignal()
     stop_signal = pyqtSignal()
     started = pyqtSignal(str)

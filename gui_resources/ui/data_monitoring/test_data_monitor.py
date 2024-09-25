@@ -128,9 +128,11 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                 except AttributeError:
                     self.open_warning_popup("Could not find Test class in test script. Please check the script and try again.")
                 else:
-                    self.test_class = TestClass(instruments=self.instruments,
-                                                device_definitions=self.device_definitions
+                    self.test_class = TestClass(device_definitions=self.device_definitions
                                                 )
+
+                    for instrument in self.test_class.needed_instruments:
+                        setattr(self.test_class, instrument, self.instruments[instrument])
 
                     self._test_thread = QThread()
                     self.test_class.moveToThread(self._test_thread)
@@ -161,7 +163,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.controls.stop_btn.clicked.connect(self.stop_test)
         self.request_stop.connect(self.test_class.request_stop)
 
-        self._test_thread.started.connect(self.test_class.start_test)
+        self._test_thread.started.connect(self.test_class.run_test)
         self._test_thread.started.connect(self.controls.disable_file_selection)
         self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self.controls.start_stop.toggle_enabled_button)
@@ -188,7 +190,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.controls.stop_btn.clicked.disconnect(self.stop_test)
         self.request_stop.disconnect(self.test_class.request_stop)
 
-        self._test_thread.started.disconnect(self.test_class.start_test)
+        self._test_thread.started.disconnect(self.test_class.run_test)
         self._test_thread.started.disconnect(self.controls.disable_file_selection)
         self._test_thread.started.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self.controls.start_stop.toggle_enabled_button)

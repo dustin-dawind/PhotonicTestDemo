@@ -1,47 +1,33 @@
-from typing import NewType
 import pandas as pd
-from test_class import TestClass
-from collections import defaultdict
+
+from test_class import (
+    TestClass,
+    standard_test
+)
 
 # Can only use these for type hinting => need instruments to be the original instance in order to synchronize everything
 from instruments import (
-    psu,
-    power_meter
+    PSU,
+    PowerMeter
 )
-
-
-PSUType = NewType('PSUType', psu.Instrument)
-PowerMeterType = NewType('PowerMeterType', power_meter.Instrument)
-
-PossibleInstruments = PSUType | PowerMeterType
 
 
 class Test(TestClass):
     def __init__(self,
-                 instruments: dict[str, PossibleInstruments],
+                 # instruments: dict[str, PossibleInstruments],
                  device_definitions: pd.DataFrame
                  ):
         super().__init__()
 
+        # The test_data_monitor will handle creating instance attributes for these instruments.
+        # They may be referenced as `self.power_meter` and `self.psu` within `self.start_test()`
         self.needed_instruments = ('power_meter', 'psu')
-
         self.DUTs = device_definitions
+        self.power_meter: PowerMeter | None = None
+        self.psu: PSU | None = None
 
-        for instrument in self.needed_instruments:
-            if instrument == 'power_meter':
-                self.power_meter = instruments.get(instrument, None)
-            elif instrument == 'psu':
-                self.psu = instruments.get(instrument, None)
-
-        if self.psu is None or self.power_meter is None:
-            raise ValueError(f'PSU and Power Meter must be specified. Got: {instruments}')
-
-        self.data = defaultdict(list)
-
-    def start_test(self):
-        self.psu.reset()
-        self.power_meter.reset()
-
+    @standard_test
+    def run_test(self):
         self.set_plot_axes_titles('Current',
                                   'Power',
                                   'Efficiency'
@@ -51,7 +37,6 @@ class Test(TestClass):
 
         test_setpoints = list(range(0, 1201, 50))
         self.send_total_num_data_points(len(test_setpoints) * len(self.DUTs.index))
-        self.start_timer()
         for index, row in self.DUTs.iterrows():
             self.new_device(row)
 
@@ -68,6 +53,10 @@ class Test(TestClass):
                     eff = power / e_power
                 if eff > 1 or eff < 0 or setpoint < 150:
                     eff = 0
+
+                # This breaks if there is ever more than 256 devices to test, as the colormap only has 256 colors.
+                # Can be fixed by reducing each device set to its mean plot after when a new device set is started
+                # (i.e. when the wafer or field ID changes)
 
                 # self.send_for_plotting(current_device,
                 #                        i_actual,
@@ -90,8 +79,4 @@ class Test(TestClass):
                     self.test_finished()
                     return
 
-        self.psu.output = 'OFF'
-        self.save_data(self.data)
-        self.print_analytics()
-        self.test_finished()
 

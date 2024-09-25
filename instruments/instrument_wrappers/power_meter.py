@@ -8,7 +8,7 @@ from PyQt5.QtCore import (
 )
 
 
-class Instrument(QObject, AbstractInstrument):
+class PowerMeter(QObject, AbstractInstrument):
     start_signal = pyqtSignal()
     stop_signal = pyqtSignal()
     started = pyqtSignal(str)

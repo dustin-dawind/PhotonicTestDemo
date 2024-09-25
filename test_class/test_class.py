@@ -1,7 +1,10 @@
 import time
-from pathlib import Path
-import pandas as pd
 from datetime import datetime
+import functools
+from collections import defaultdict
+from pathlib import Path
+
+import pandas as pd
 from rich import print
 from rich.table import Table
 
@@ -28,14 +31,19 @@ class TestClass(QObject):
     update_test_status_signal = pyqtSignal(str)
     test_finished_signal = pyqtSignal()
 
-    def __init__(self,
-                 **instruments):
+    def __init__(self, **instruments):
         super().__init__()
         self._start_time = None
         self.needed_instruments = None
         self.instruments = None
         self.user_requested_stop = False
+
         self.step_counter = 0
+        self.DUTs = None
+        self.data = defaultdict(list)
+
+        self.filename = None
+        self.save_directory = Path(Path.cwd() / "resources" / "test_results")
 
     @pyqtSlot()
     def request_stop(self):
@@ -44,14 +52,14 @@ class TestClass(QObject):
     def register_instruments(self):
         self.needed_instruments_signal.emit(self.needed_instruments)
 
-    def start_timer(self):
-        self._start_time = time.perf_counter()
+    # def start_timer(self):
+    #     self._start_time = time.perf_counter()
 
     @pyqtSlot(dict)
     def get_instruments(self, instruments: dict):
         self.instruments = instruments
 
-    def start_test(self, ):
+    def run_test(self, ):
         raise NotImplementedError("This method must be overridden in a child class")
 
     def new_device(self, device: pd.Series):
@@ -75,20 +83,20 @@ class TestClass(QObject):
             case _:
                 raise ValueError(f'Expected 1 or 2 arguments, got {len(y_title)}')
 
-    def print_analytics(self):
-        total = time.perf_counter() - self._start_time
-        mean = total / self.step_counter
-
-        print()
-        test_analytics = Table(title='[magenta]Test Analytics[/]',
-                               show_header=False,
-                               show_lines=True
-                               )
-        test_analytics.add_row("[cyan]Avg. time per measurement: [/]",
-                               f"[yellow]{mean * 1000: 0.2f} ms[/]")
-        test_analytics.add_row("[cyan]Total testing time: [/]",
-                               f"[yellow]{total: 0.2f} s[/]")
-        print(test_analytics)
+    # def print_analytics(self):
+    #     total = time.perf_counter() - self._start_time
+    #     mean = total / self.step_counter
+    #
+    #     print()
+    #     test_analytics = Table(title='[magenta]Test Analytics[/]',
+    #                            show_header=False,
+    #                            show_lines=True
+    #                            )
+    #     test_analytics.add_row("[cyan]Avg. time per measurement: [/]",
+    #                            f"[yellow]{mean * 1000: 0.2f} ms[/]")
+    #     test_analytics.add_row("[cyan]Total testing time: [/]",
+    #                            f"[yellow]{total: 0.2f} s[/]")
+    #     print(test_analytics)
 
     def update_test_progress(self):
         self.update_test_progress_signal.emit(self.step_counter)
@@ -102,10 +110,71 @@ class TestClass(QObject):
         self.update_test_status_signal.emit("Done!")
         self.test_finished_signal.emit()
 
-    @staticmethod
-    def save_data(data: dict[str, list[str | float]]):
-        output = pd.DataFrame.from_dict(data)
-        path = Path.cwd() / "test_results"
+    def _save_to_generated_filename(self):
+        wafers = self.DUTs["Wafer ID"].unique()
+        fields = self.DUTs["Field ID"].unique()
+        devices = self.DUTs["Device ID"].unique()
 
-        output.to_csv(path / f'data{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv', index=False)
+        if len(wafers) > 1:
+            wafers = f"W{wafers[0]}-{wafers[-1]}"
+        else:
+            wafers = f"W{wafers[0]}"
+        if len(fields) > 1:
+            fields = f"F{fields[0]}-{fields[-1]}"
+        else:
+            fields = f"F{fields[0]}"
+        if len(devices) > 1:
+            devices = f"D{devices[0]}-{devices[-1]}"
+        else:
+            devices = f"D{devices[0]}"
+        filename = f"{wafers}_{fields}_{devices}"
+
+        full_filepath = self.save_directory / f'{filename}_{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv'
+        output = pd.DataFrame.from_dict(self.data)
+        output.to_csv(full_filepath, index=False)
+        print(f"\n[bright_magenta]Results saved to {full_filepath}[/]")
+        self.test_finished()
+
+    def _print_time_analytics(self, start_time):
+            total = time.perf_counter() - start_time
+            mean = total / self.step_counter
+
+            print()
+            test_analytics = Table(title='[bright_magenta]Test Analytics[/]',
+                                   show_header=False,
+                                   show_lines=True
+                                   )
+            test_analytics.add_row("[bright_cyan]Avg. time per measurement: [/]",
+                                   f"[bright_yellow]{mean * 1000:0.0f} ms[/]")
+            test_analytics.add_row("[bright_cyan]Total testing time: [/]",
+                                   f"[bright_yellow]{total :0.2f} s[/]")
+            print(test_analytics)
+
+def standard_test(overloaded_run_test):
+    @functools.wraps(overloaded_run_test)
+    def fully_wrapped_start_test(self, *args, **kwargs):
+        for instrument in self.needed_instruments:
+            getattr(self, instrument).reset()
+
+        start_time = time.perf_counter()
+        overloaded_run_test(self, *args, **kwargs)
+        self._print_time_analytics(start_time)
+
+        for instrument in self.needed_instruments:
+            getattr(self, instrument).reset()
+
+        self._save_to_generated_filename()
+
+    return fully_wrapped_start_test
+
+
+
+
+
+
+
+
+
+
+
 
