@@ -145,12 +145,6 @@ def verify_input_with_user(input_dict: dict):
     parse_response(get_user_input(preamble="\nPlease confirm that the above run configuration is correct."))
 
 
-# TODO:
-#  * Write a script that simlulates LIV/Spectra data - outputting them to CSV
-#  * Come up with an example filename structure
-#  * Add rest of wants/needs to this to-do so can keep better track of features still wanted/needed
-
-
 if __name__ == "__main__":
     if is_frozen:
         console.clear()
