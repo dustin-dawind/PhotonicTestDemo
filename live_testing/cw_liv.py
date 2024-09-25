@@ -53,8 +53,7 @@ class Test(TestClass):
         test_setpoints = list(range(0, 1201, 50))
         self.send_total_num_data_points(len(test_setpoints) * len(self.DUTs.index))
         for index, row in self.DUTs.iterrows():
-            # if row["Device ID"] != current_device:
-            #     self.new_device(current_device := (row["Field ID"] * 1e3 + row["Device ID"]))
+            self.new_device(row)
 
             for setpoint in test_setpoints:
 

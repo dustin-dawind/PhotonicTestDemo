@@ -1,10 +1,29 @@
 import numpy as np
+import pandas as pd
+from dataclasses import dataclass
 
 from PyQt5.QtCore import (
     QObject,
     pyqtSignal,
     pyqtSlot,
 )
+
+
+@dataclass
+class CharacteristicParameters:
+    v_th: float = 0.025852
+    non_ideal_factor: float = 1.2
+    exp_denom: float = v_th * non_ideal_factor
+    threshold: float = 100
+    ase_multiplier: float = 70
+    slope_eff: float = 0.7
+    i_rev_sat: float = 10
+
+    def randomize(self):
+        self.threshold = np.random.uniform(80, 120)
+        self.ase_multiplier = np.random.uniform(60, 80)
+        self.slope_eff = np.random.uniform(0.6, 0.8)
+        self.i_rev_sat = np.random.uniform(8, 20)
 
 
 class LaserEmulator(QObject):
@@ -15,20 +34,20 @@ class LaserEmulator(QObject):
         super().__init__(*args, **kwargs)
 
         # -------------- Characteristic parameters --------------
-        self._v_th = 0.025852  # This is constant
-        self._non_ideal_factor = 0
-        self.exp_denom = self._v_th * self._non_ideal_factor
+        self._base_parameters = CharacteristicParameters()
+        self._non_ideal_factor = self._base_parameters.non_ideal_factor
+        self.exp_denom = self._base_parameters.exp_denom
 
-        self._threshold = 0
-        self._ase_multiplier = 0
-        self._slope_eff = 0
-        self.i_rev_sat = 0
+        self._threshold = self._base_parameters.threshold
+        self._ase_multiplier = self._base_parameters.ase_multiplier
+        self._slope_eff = self._base_parameters.slope_eff
+        self.i_rev_sat = self._base_parameters.i_rev_sat
         # --------------------------------------------------------
-
-        self.swap_device()  # Initialize characteristic parameters
 
         self._i_current = 0
         self._psu_on = False
+
+        self._previous_device = pd.Series(index=["Wafer ID", "Field ID", "Device ID"])
 
     def _f_liv(self, current):
         def ase_func(x):
@@ -77,15 +96,20 @@ class LaserEmulator(QObject):
             case "OFF":
                 self._psu_on = False
 
-    def swap_device(self):
+    @pyqtSlot(pd.Series)
+    def swap_device(self, new_device: pd.Series | None = None):
+        if self._previous_device["Wafer ID"] == np.nan:
+            pass
+        elif new_device["Wafer ID"] != self._previous_device["Wafer ID"] or new_device["Field ID"] != self._previous_device["Field ID"]:
+            self._base_parameters.randomize()
+
         # LIV parameters
-        self._threshold = np.random.normal(100, 10)
-        self._ase_multiplier = 1 / np.random.normal(70, 5)
-        self._slope_eff = np.random.normal(0.9, 0.025)
+        self._threshold = np.random.normal(self._base_parameters.threshold, 10)
+        self._ase_multiplier = 1 / np.random.normal(self._base_parameters.ase_multiplier, 5)
+        self._slope_eff = np.random.normal(self._base_parameters.slope_eff, 0.025)
 
         # RevIV parameters
-        self._non_ideal_factor = 1.2 + np.random.normal(0, 0.025)
-        self.exp_denom = self._v_th * self._non_ideal_factor
+        self._non_ideal_factor = np.random.normal(self._base_parameters.non_ideal_factor, 0.025)
+        self.exp_denom = self._base_parameters.v_th * self._non_ideal_factor
 
-        self.i_rev_sat = 1e-14 / np.random.normal(50, 10)
-
+        self.i_rev_sat = 1e-14 / np.random.normal(self._base_parameters.i_rev_sat, 1)

@@ -21,7 +21,7 @@ class TestClass(QObject):
     set_axes_titles_signal = pyqtSignal([str, str],
                                         [str, str, str]
                                         )
-    new_device_signal = pyqtSignal(int)
+    new_device_signal = pyqtSignal(pd.Series)
     needed_instruments_signal = pyqtSignal(object)
 
     # test_started_signal = pyqtSignal(str)
@@ -63,8 +63,8 @@ class TestClass(QObject):
     def start_test(self, ):
         raise NotImplementedError("This method must be overridden in a child class")
 
-    def new_device(self, device_num: int):
-        self.new_device_signal.emit(device_num)
+    def new_device(self, device: pd.Series):
+        self.new_device_signal.emit(device)
 
     def send_for_plotting(self, *data):
         match len(data):
