@@ -23,7 +23,7 @@ elif 'Quintessent' not in str(Path.cwd().parent):
 else:
     base_path = Path.cwd().parents[3]
 
-PATH_TO_TEST_SCRIPTS = str(base_path / "live_testing")
+PATH_TO_TEST_SCRIPTS = str(base_path / "resources" / "testing_definitions")
 
 
 class FileSelectorUINoLayout(QWidget):
