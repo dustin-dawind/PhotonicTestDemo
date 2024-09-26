@@ -7,10 +7,6 @@ output_filepath = '''C:\Users\Matt\PycharmProjects\Quintessent Presentation\reso
     rev_iv = ''
 
 [analysis_flags]
-    plot = true
-    liv.analysis = true
     liv.threshold = true
     liv.slope_efficiency = true
-    liv.peak_efficiency = true
-    liv.peak_power = true
     rev_iv.analysis = false
