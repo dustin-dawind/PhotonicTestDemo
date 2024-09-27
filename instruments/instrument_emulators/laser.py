@@ -107,7 +107,7 @@ class LaserEmulator(QObject):
             self._base_parameters.randomize()
 
         # LIV parameters
-        self._threshold = np.random.normal(self._base_parameters.threshold, 10)
+        self._threshold = np.random.normal(self._base_parameters.threshold, 5)
         self._ase_multiplier = np.random.normal(self._base_parameters.ase_multiplier, 5)
         self._slope_eff = np.random.normal(self._base_parameters.slope_eff, 0.01)
         # print("slope_eff", self._slope_eff)

@@ -1,200 +1,152 @@
 from functools import partial
-from typing import Literal
 
-import cv2
-import numpy as np
-
-import warnings
-
-# Importing third party packages.
-from PyQt5.QtCore import (
-    pyqtSlot,
-    pyqtSignal,
-    QTimer,
-    QThread,
-    Qt,
-    QPointF,
-    )
-from PyQt5.QtWidgets import (
-    QMainWindow,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QWidget,
-    QLineEdit,
-    QLabel,
-    QFrame,
-    QComboBox,
-    QCheckBox,
-    QGridLayout,
-    QMessageBox,
-    )
-from PyQt5.QtGui import (
-    QPen,
-    QColor,
-    )
-import pyqtgraph as pg
-
-# Import your own packages
-import freedomlib as fl
-from freedomlib.interfaces.helpers.messageboxes import MessageBoxOkCancel
-from freedomlib.interfaces.freedom_test.monitors.beam_profiling import common
+# class MainPlotViewer(pg.PlotWidget):
+#     def __init__(self,
+#                  resolution: tuple[int, int] = (640, 512),
+#                  *args,
+#                  **kwargs
+#                  ):
+#         super().__init__(*args, **kwargs)
+#         self.setGeometry(QRect(30, 30, *resolution))
+#         self.setBackground('gray')
+#         self.setAspectLocked(True)
+#
+#         disable_extra_context_menu_options(self)
+#         self.setContextMenuActionVisible('Grid', False)
+#
+#         self.getPlotItem().hideAxis('left')
+#         self.getPlotItem().hideAxis('bottom')
 
 
-MAX_INT_16 = 2**16
-
-pg.setConfigOption('useNumba', True)
-
-empty_object = common.EmptyObject()
-
-
-class MainPlotViewer(pg.PlotWidget):
-    def __init__(self,
-                 resolution: tuple[int, int] = (640, 512),
-                 *args,
-                 **kwargs
-                 ):
-        super().__init__(*args, **kwargs)
-        self.setGeometry(QRect(30, 30, *resolution))
-        self.setBackground('gray')
-        self.setAspectLocked(True)
-
-        disable_extra_context_menu_options(self)
-        self.setContextMenuActionVisible('Grid', False)
-
-        self.getPlotItem().hideAxis('left')
-        self.getPlotItem().hideAxis('bottom')
-
-
-class SubPlotViewer(pg.PlotWidget):
-    _PositionTypes = Literal['Pixels', 'Index', 'µm', 'mm']
-
-    _BgColors = Literal['k', 'black', 'w', 'white']
-
-    def __init__(self, *args,
-                 x_axis_length: int = 640,
-                 y_axis_length: int | None = 1,
-                 plot_title: str = '',
-                 position_type: _PositionTypes = 'Pixels',
-                 center_x_at_zero: bool = False,
-                 init_with_noise: bool = True,
-                 **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if position_type not in (allowed_type := get_args(self._PositionTypes)):
-            raise ValueError(f"Position type must be one of {allowed_type}")
-        else:
-            position_axis_title = f'Position ({position_type})'
-
-        self.plot_area: pg.PlotDataItem = self.plot(pen=(150, 150, 150))
-        self.init_with_noise = init_with_noise
-
-        if self.init_with_noise is True:
-            noise_max = y_axis_length if y_axis_length is not None else 5000
-
-            if noise_max == 1 and center_x_at_zero is True:
-                mean = 0
-                fwhm = 120
-                std = fwhm / (2 * np.sqrt(2 * np.log(2)))
-                x = np.linspace(-x_axis_length // 2, x_axis_length // 2, x_axis_length + 1)
-                init_data = stats.norm.pdf(x, mean, std)
-                init_data = init_data / np.max(init_data)
-                self.plot_area.setData(x=x, y=init_data)
-
-            else:
-                init_data = np.random.randint(0, noise_max, x_axis_length)
-                self.plot_area.setData(init_data)
-
-        self._plot_title = plot_title
-
-        if center_x_at_zero:
-            x_max = x_axis_length // 2
-            self.setLimits(xMin=-x_max,
-                           xMax=x_max,
-                           yMin=0,
-                           yMax=y_axis_length,
-                           )
-        else:
-            self.setLimits(xMin=0,
-                           xMax=x_axis_length,
-                           yMin=0,
-                           yMax=y_axis_length,
-                           )
-
-        self.plot_item: pg.PlotItem = self.getPlotItem()
-        self.plot_item.setTitle(self._plot_title)
-        self.plot_item.setLabel('left', 'Intensity (a.u.)')
-        self.plot_item.setLabel('bottom', position_axis_title)
-
-        self.x_axis: pg.AxisItem = self.getAxis('bottom')
-        self.x_axis.showLabel()
-
-        self.y_axis: pg.AxisItem = self.getAxis('left')
-        self.y_axis.showLabel()
-
-        self.disableAutoRange(axis=pg.ViewBox.XYAxes)
-        self.setAntialiasing(True)
-
-    def showEvent(self, event: QEvent):
-        super().showEvent(event)
-        self._fit_axes_to_view()
-
-    def resizeEvent(self, event: QEvent):
-        super().resizeEvent(event)
-        self._fit_axes_to_view()
-
-    def _fit_axes_to_view(self, padding: float = 0.05):
-        scene_rect = self.sceneRect()
-
-        width = scene_rect.width() * (1 + padding)
-        height = scene_rect.height()
-        center = scene_rect.center()
-        zoom_rect = QRectF(center.x() - width / 2, center.y() - height / 2, width, height)
-
-        self.fitInView(zoom_rect)
-
-    def set_background_color(self, color: _BgColors = 'k'):
-        """Sets the background color of the plot
-
-        This will automatically update the foreground colors as well to maintain contrast
-
-        allowed background colors are 'k'/'black' & 'w'/'white'
-
-        Parameters
-        ----------
-        color : str, optional
-            The color to set the background to, by default 'k'
-        """
-
-        match color:
-            case bg_color if bg_color not in get_args(self._BgColors):
-                raise ValueError(f"Background color must be one of {get_args(self._BgColors)}. Got {bg_color}")
-
-            case _:
-                # Note that `color` is still bound to `bg_color` via the previous case statement
-
-                # Set the background color
-                self.setBackground(bg_color)
-
-                # Set all foreground colors with contrasting color
-                contrast_color = 'd' if bg_color == 'k' else 'k'
-
-                y_axis = self.plot_item.axes['left']['item']
-                x_axis = self.plot_item.axes['bottom']['item']
-
-                y_axis.setPen(contrast_color)
-                y_axis.setTextPen(contrast_color)
-
-                x_axis.setPen(contrast_color)
-                x_axis.setTextPen(contrast_color)
-
-                self.plot_item.setTitle(self._plot_title, color=contrast_color)
-
-                # if self.init_with_noise is True:
-                #     self.plot_area.setPen(contrast_color)
-
-    def set_foreground_color(self, color: str):
-        pass
+# class SubPlotViewer(pg.PlotWidget):
+#     _PositionTypes = Literal['Pixels', 'Index', 'µm', 'mm']
+#
+#     _BgColors = Literal['k', 'black', 'w', 'white']
+#
+#     def __init__(self, *args,
+#                  x_axis_length: int = 640,
+#                  y_axis_length: int | None = 1,
+#                  plot_title: str = '',
+#                  position_type: _PositionTypes = 'Pixels',
+#                  center_x_at_zero: bool = False,
+#                  init_with_noise: bool = True,
+#                  **kwargs):
+#         super().__init__(*args, **kwargs)
+#
+#         if position_type not in (allowed_type := get_args(self._PositionTypes)):
+#             raise ValueError(f"Position type must be one of {allowed_type}")
+#         else:
+#             position_axis_title = f'Position ({position_type})'
+#
+#         self.plot_area: pg.PlotDataItem = self.plot(pen=(150, 150, 150))
+#         self.init_with_noise = init_with_noise
+#
+#         if self.init_with_noise is True:
+#             noise_max = y_axis_length if y_axis_length is not None else 5000
+#
+#             if noise_max == 1 and center_x_at_zero is True:
+#                 mean = 0
+#                 fwhm = 120
+#                 std = fwhm / (2 * np.sqrt(2 * np.log(2)))
+#                 x = np.linspace(-x_axis_length // 2, x_axis_length // 2, x_axis_length + 1)
+#                 init_data = stats.norm.pdf(x, mean, std)
+#                 init_data = init_data / np.max(init_data)
+#                 self.plot_area.setData(x=x, y=init_data)
+#
+#             else:
+#                 init_data = np.random.randint(0, noise_max, x_axis_length)
+#                 self.plot_area.setData(init_data)
+#
+#         self._plot_title = plot_title
+#
+#         if center_x_at_zero:
+#             x_max = x_axis_length // 2
+#             self.setLimits(xMin=-x_max,
+#                            xMax=x_max,
+#                            yMin=0,
+#                            yMax=y_axis_length,
+#                            )
+#         else:
+#             self.setLimits(xMin=0,
+#                            xMax=x_axis_length,
+#                            yMin=0,
+#                            yMax=y_axis_length,
+#                            )
+#
+#         self.plot_item: pg.PlotItem = self.getPlotItem()
+#         self.plot_item.setTitle(self._plot_title)
+#         self.plot_item.setLabel('left', 'Intensity (a.u.)')
+#         self.plot_item.setLabel('bottom', position_axis_title)
+#
+#         self.x_axis: pg.AxisItem = self.getAxis('bottom')
+#         self.x_axis.showLabel()
+#
+#         self.y_axis: pg.AxisItem = self.getAxis('left')
+#         self.y_axis.showLabel()
+#
+#         self.disableAutoRange(axis=pg.ViewBox.XYAxes)
+#         self.setAntialiasing(True)
+#
+#     def showEvent(self, event: QEvent):
+#         super().showEvent(event)
+#         self._fit_axes_to_view()
+#
+#     def resizeEvent(self, event: QEvent):
+#         super().resizeEvent(event)
+#         self._fit_axes_to_view()
+#
+#     def _fit_axes_to_view(self, padding: float = 0.05):
+#         scene_rect = self.sceneRect()
+#
+#         width = scene_rect.width() * (1 + padding)
+#         height = scene_rect.height()
+#         center = scene_rect.center()
+#         zoom_rect = QRectF(center.x() - width / 2, center.y() - height / 2, width, height)
+#
+#         self.fitInView(zoom_rect)
+#
+#     def set_background_color(self, color: _BgColors = 'k'):
+#         """Sets the background color of the plot
+#
+#         This will automatically update the foreground colors as well to maintain contrast
+#
+#         allowed background colors are 'k'/'black' & 'w'/'white'
+#
+#         Parameters
+#         ----------
+#         color : str, optional
+#             The color to set the background to, by default 'k'
+#         """
+#
+#         match color:
+#             case bg_color if bg_color not in get_args(self._BgColors):
+#                 raise ValueError(f"Background color must be one of {get_args(self._BgColors)}. Got {bg_color}")
+#
+#             case _:
+#                 # Note that `color` is still bound to `bg_color` via the previous case statement
+#
+#                 # Set the background color
+#                 self.setBackground(bg_color)
+#
+#                 # Set all foreground colors with contrasting color
+#                 contrast_color = 'd' if bg_color == 'k' else 'k'
+#
+#                 y_axis = self.plot_item.axes['left']['item']
+#                 x_axis = self.plot_item.axes['bottom']['item']
+#
+#                 y_axis.setPen(contrast_color)
+#                 y_axis.setTextPen(contrast_color)
+#
+#                 x_axis.setPen(contrast_color)
+#                 x_axis.setTextPen(contrast_color)
+#
+#                 self.plot_item.setTitle(self._plot_title, color=contrast_color)
+#
+#                 # if self.init_with_noise is True:
+#                 #     self.plot_area.setPen(contrast_color)
+#
+#     def set_foreground_color(self, color: str):
+#         pass
 
 
 class MonitorSetupInfo(QFrame):
@@ -615,300 +567,300 @@ class MonitorSetupInfo(QFrame):
                 self.update_main_window_frame_rate.emit(new_frame_rate)
 
 
-class RowLinescan(common.SubPlotViewer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         x_axis_length=VideoWorker.resolution[0],
-                         plot_title="Row Linescan",
-                         position_type='Pixels',
-                         **kwargs)
-
-        self.setLimits(xMin=0,
-                       xMax=VideoWorker.resolution[0] + (VideoWorker.resolution[0] // 10),
-                       yMin=0,
-                       yMax=67000,
-                       minXRange=VideoWorker.resolution[0],
-                       minYRange=67000
-                       )
-        self.plot_area.getViewBox().setXRange(min=0,
-                                              max=VideoWorker.resolution[0] + (VideoWorker.resolution[0] // 10),
-                                              padding=0.2
-                                              )
-        self.plot_area.getViewBox().setYRange(min=0,
-                                              max=MAX_INT_16,
-                                              padding=0.2
-                                              )
-
-        self.getAxis('bottom').setTickSpacing(levels=[(VideoWorker.resolution[0]//4, 0),
-                                                      (VideoWorker.resolution[0]//8, 0)
-                                                      ]
-                                              )
-
-        self.getAxis('left').setTickSpacing(levels=[(MAX_INT_16//2, 0),
-                                                    (MAX_INT_16//4, 0),
-                                                    (MAX_INT_16//8, 0)]
-                                            )
-
-    def update_data(self,
-                    linescan_data: np.ndarray[np.uint16],
-                    ):
-        assert linescan_data.shape == (VideoWorker.resolution[0],)
-
-        # This should allow the plot to be updated without having to re-link the axes every time
-        self.plot_area.setData(linescan_data[::-1])
-
-
-class ColumnLinescan(common.SubPlotViewer):
-    def __init__(self,
-                 *args,
-                 **kwargs
-                 ):
-        super().__init__(*args,
-                         x_axis_length=VideoWorker.resolution[1],
-                         plot_title="Column Linescan",
-                         position_type='Pixels',
-                         **kwargs
-                         )
-
-        self.setLimits(xMin=0,
-                       xMax=VideoWorker.resolution[1] + (VideoWorker.resolution[1] // 10),
-                       yMin=0,
-                       yMax=67000,
-                       minXRange=VideoWorker.resolution[1],
-                       minYRange=67000
-                       )
-        self.plot_area.getViewBox().setXRange(min=0,
-                                              max=VideoWorker.resolution[1] + (VideoWorker.resolution[1] // 10),
-                                              padding=0.2
-                                              )
-        self.plot_area.getViewBox().setYRange(min=0,
-                                              max=MAX_INT_16,
-                                              padding=0.2
-                                              )
-
-        self.getAxis('bottom').setTickSpacing(levels=[(VideoWorker.resolution[1]//4, 0),
-                                                      (VideoWorker.resolution[1]//8, 0)
-                                                      ]
-                                              )
-        self.getAxis('left').setTickSpacing(levels=[(MAX_INT_16//2, 0),
-                                                    (MAX_INT_16//4, 0)
-                                                    ]
-                                            )
-
-    def update_data(self,
-                    linescan_data: np.ndarray[np.uint16],
-                    ):
-        assert linescan_data.shape == (VideoWorker.resolution[1],)
-
-        # This should allow the plot to be updated without having to re-link the axes every time
-        self.plot_area.setData(linescan_data)
-
-
-class LinescanPlots:
-    def __init__(self):
-        self.row_linescan = RowLinescan()
-        self.column_linescan = ColumnLinescan()
-
-        self.row_thread = QThread()
-        self.row_linescan.moveToThread(self.row_thread)
-        self.row_thread.start()
-
-        self.column_thread = QThread()
-        self.column_linescan.moveToThread(self.column_thread)
-        self.column_thread.start()
-
-    def update_data(self, image_data: np.ndarray[np.uint16], central_lobe_xy: dict[str, int]):
-        try:
-            row_data = image_data[central_lobe_xy["y"], :]
-            column_data = image_data[:, central_lobe_xy["x"]]
-        except IndexError as error:
-            log_s.error("An error occurred while trying to update row/column linescans."
-                        f"\n\ncentral lobe coordinates: x={central_lobe_xy['x']} y={central_lobe_xy['y']}")
-        else:
-            self.row_linescan.update_data(row_data)
-            self.column_linescan.update_data(column_data)
-
-    def setVisible(self, visible: bool):
-        self.row_linescan.setVisible(visible)
-        self.column_linescan.setVisible(visible)
+# class RowLinescan(common.SubPlotViewer):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args,
+#                          x_axis_length=VideoWorker.resolution[0],
+#                          plot_title="Row Linescan",
+#                          position_type='Pixels',
+#                          **kwargs)
+#
+#         self.setLimits(xMin=0,
+#                        xMax=VideoWorker.resolution[0] + (VideoWorker.resolution[0] // 10),
+#                        yMin=0,
+#                        yMax=67000,
+#                        minXRange=VideoWorker.resolution[0],
+#                        minYRange=67000
+#                        )
+#         self.plot_area.getViewBox().setXRange(min=0,
+#                                               max=VideoWorker.resolution[0] + (VideoWorker.resolution[0] // 10),
+#                                               padding=0.2
+#                                               )
+#         self.plot_area.getViewBox().setYRange(min=0,
+#                                               max=MAX_INT_16,
+#                                               padding=0.2
+#                                               )
+#
+#         self.getAxis('bottom').setTickSpacing(levels=[(VideoWorker.resolution[0]//4, 0),
+#                                                       (VideoWorker.resolution[0]//8, 0)
+#                                                       ]
+#                                               )
+#
+#         self.getAxis('left').setTickSpacing(levels=[(MAX_INT_16//2, 0),
+#                                                     (MAX_INT_16//4, 0),
+#                                                     (MAX_INT_16//8, 0)]
+#                                             )
+#
+#     def update_data(self,
+#                     linescan_data: np.ndarray[np.uint16],
+#                     ):
+#         assert linescan_data.shape == (VideoWorker.resolution[0],)
+#
+#         # This should allow the plot to be updated without having to re-link the axes every time
+#         self.plot_area.setData(linescan_data[::-1])
+#
+#
+# class ColumnLinescan(common.SubPlotViewer):
+#     def __init__(self,
+#                  *args,
+#                  **kwargs
+#                  ):
+#         super().__init__(*args,
+#                          x_axis_length=VideoWorker.resolution[1],
+#                          plot_title="Column Linescan",
+#                          position_type='Pixels',
+#                          **kwargs
+#                          )
+#
+#         self.setLimits(xMin=0,
+#                        xMax=VideoWorker.resolution[1] + (VideoWorker.resolution[1] // 10),
+#                        yMin=0,
+#                        yMax=67000,
+#                        minXRange=VideoWorker.resolution[1],
+#                        minYRange=67000
+#                        )
+#         self.plot_area.getViewBox().setXRange(min=0,
+#                                               max=VideoWorker.resolution[1] + (VideoWorker.resolution[1] // 10),
+#                                               padding=0.2
+#                                               )
+#         self.plot_area.getViewBox().setYRange(min=0,
+#                                               max=MAX_INT_16,
+#                                               padding=0.2
+#                                               )
+#
+#         self.getAxis('bottom').setTickSpacing(levels=[(VideoWorker.resolution[1]//4, 0),
+#                                                       (VideoWorker.resolution[1]//8, 0)
+#                                                       ]
+#                                               )
+#         self.getAxis('left').setTickSpacing(levels=[(MAX_INT_16//2, 0),
+#                                                     (MAX_INT_16//4, 0)
+#                                                     ]
+#                                             )
+#
+#     def update_data(self,
+#                     linescan_data: np.ndarray[np.uint16],
+#                     ):
+#         assert linescan_data.shape == (VideoWorker.resolution[1],)
+#
+#         # This should allow the plot to be updated without having to re-link the axes every time
+#         self.plot_area.setData(linescan_data)
 
 
-class HistogramPlot(pg.PlotWidget):
-    def __init__(self,
-                 *args,
-                 **kwargs
-                 ):
-        super().__init__(*args,
-                         **kwargs
-                         )
-
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        self.num_bins = 65536//512
-        self.num_pixels = VideoWorker.resolution[0] * VideoWorker.resolution[1]
-        self.plot_area = self.plot()
-
-        plot_item = self.getPlotItem()
-        plot_item.setTitle("Histogram")
-        plot_item.setLabel('left', '# of Pixels')
-        plot_item.setLabel('bottom', 'Pixel Intensity (a.u.)')
-
-        self.setLimits(xMin=0, xMax=MAX_INT_16 - 1 + 6144, yMin=0, yMax=self.num_pixels, minXRange=10000,
-                       minYRange=10)
-        self.plot_area.getViewBox().setXRange(min=0, max=MAX_INT_16 - 1 + 6144, padding=0.2)
-        self.plot_area.getViewBox().setYRange(min=0, max=self.num_pixels, padding=0.2)
-        x_axis = self.getAxis('bottom')
-        x_axis.setTickSpacing(levels=[(65536//4, 0), (65536//16, 0)])
-        x_axis.showLabel()
-        y_axis = self.getAxis('left')
-        y_axis.setTickSpacing(levels=[(self.num_pixels//2, 0), (self.num_pixels//4, 0), (self.num_pixels//8, 0)])
-        y_axis.showLabel()
-        self.disableAutoRange(axis=pg.ViewBox.XYAxes)
-        self.setAntialiasing(True)
-
-    @pyqtSlot()
-    def update_data(self, pixel_data: np.ndarray[np.uint16]):
-        new_data = pixel_data.ravel()
-        freq, bin_edges = np.histogram(new_data, bins=self.num_bins)
-
-        # This should allow the plot to be updated without having to re-link the axes every time
-        self.plot_area.setData(bin_edges, freq, fillLevel=0, stepMode="center", brush=(0, 0, 255, 150))
+# class LinescanPlots:
+#     def __init__(self):
+#         self.row_linescan = RowLinescan()
+#         self.column_linescan = ColumnLinescan()
+#
+#         self.row_thread = QThread()
+#         self.row_linescan.moveToThread(self.row_thread)
+#         self.row_thread.start()
+#
+#         self.column_thread = QThread()
+#         self.column_linescan.moveToThread(self.column_thread)
+#         self.column_thread.start()
+#
+#     def update_data(self, image_data: np.ndarray[np.uint16], central_lobe_xy: dict[str, int]):
+#         try:
+#             row_data = image_data[central_lobe_xy["y"], :]
+#             column_data = image_data[:, central_lobe_xy["x"]]
+#         except IndexError as error:
+#             log_s.error("An error occurred while trying to update row/column linescans."
+#                         f"\n\ncentral lobe coordinates: x={central_lobe_xy['x']} y={central_lobe_xy['y']}")
+#         else:
+#             self.row_linescan.update_data(row_data)
+#             self.column_linescan.update_data(column_data)
+#
+#     def setVisible(self, visible: bool):
+#         self.row_linescan.setVisible(visible)
+#         self.column_linescan.setVisible(visible)
 
 
-class SubPlotLayout(QVBoxLayout):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.linescan_plots = LinescanPlots()
-
-        self.histogram_thread = QThread()
-        self.histogram_plot = HistogramPlot()
-        self.histogram_plot.moveToThread(self.histogram_thread)
-        self.histogram_thread.start()
-
-        self.linescan_plots.setVisible(True)
-        self.histogram_plot.setVisible(True)
-
-        self.addWidget(self.linescan_plots.row_linescan)
-        self.addWidget(self.linescan_plots.column_linescan)
-        self.addWidget(self.histogram_plot)
-
-
-class VideoFeed(common.MainPlotViewer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.data = np.zeros((VideoWorker.resolution[0],
-                              VideoWorker.resolution[1]
-                              ),
-                             dtype=np.uint16
-                             )
-        self.image = pg.ImageItem(self.data,
-                                  autoLevels=False,
-                                  )
-
-        column_idx = VideoWorker.resolution[0] / 2
-        row_idx = VideoWorker.resolution[1] / 2
-
-        self.column_linescan_marker = pg.InfiniteLine(pos=column_idx, angle=90, pen='r')
-        self.row_linescan_marker = pg.InfiniteLine(pos=row_idx, angle=0, pen='r')
-
-        marker_color = QColor(Qt.darkYellow)
-        marker_color.setAlphaF(0.5)
-        marker_pen = QPen(marker_color)
-        marker_pen.setStyle(Qt.PenStyle.DashLine)
-
-        self.column_linescan_marker.setPen(marker_pen)
-        self.row_linescan_marker.setPen(marker_pen)
-
-        self.invertY(True)
-        self.invertX(True)
-
-        self.column_linescan_marker.setVisible(False)
-        self.row_linescan_marker.setVisible(False)
-
-        self.view_box = self.plotItem.getViewBox()
-
-        self.pixel_peaker = pg.TargetItem(pos=(0, 0),
-                                          symbol='o',
-                                          size=5,
-                                          movable=False,
-                                          pen='r',
-                                          brush='r',
-                                          )
-        self.pixel_peaker.setVisible(False)
-
-        self.addItem(self.image)
-        self.addItem(self.column_linescan_marker)
-        self.addItem(self.row_linescan_marker)
-        self.addItem(self.pixel_peaker)
-
-        self.plotItem.scene().sigMouseMoved.connect(self.mouse_moved)
-
-    def update_data(self, image_data: np.ndarray[np.uint16], central_lobe_xy: dict[str, int]):
-        self.data = image_data
-        self.image.setImage(self.data,
-                            axisOrder='row-major',
-                            autoLevels=False
-                            )
-
-        self.column_linescan_marker.setPos(central_lobe_xy["x"])
-        self.row_linescan_marker.setPos(central_lobe_xy["y"])
-
-    def are_linescan_markers_visible(self) -> bool:
-        if self.column_linescan_marker.isVisible() and self.row_linescan_marker.isVisible():
-            return True
-        else:
-            return False
-
-    def set_linescan_markers_visible(self, true_false: bool):
-        self.column_linescan_marker.setVisible(true_false)
-        self.row_linescan_marker.setVisible(true_false)
-
-    def mouse_moved(self, pos: QPointF):
-        if not self.plotItem.sceneBoundingRect().contains(pos):
-            if self.pixel_peaker.isVisible():
-                self.pixel_peaker.setVisible(False)
-        else:
-            mouse_point = self.view_box.mapSceneToView(pos)
-            x_idx = round(mouse_point.x())
-            y_idx = round(mouse_point.y())
-            x_lim, y_lim = self.data.shape
-            if 0 < x_idx < x_lim and 0 < y_idx < y_lim:
-                if not self.pixel_peaker.isVisible():
-                    self.pixel_peaker.setVisible(True)
-                self.pixel_peaker.setPos(x_idx, y_idx)
-                value = self.data[x_idx, y_idx]
-                self.pixel_peaker.setLabel(str(value),
-                                           labelOpts={'color': 'r',
-                                                      'offset': (-5, -10),
-                                                      'ensureInBounds': True
-                                                      }
-                                           )
-            else:
-                if self.pixel_peaker.isVisible():
-                    self.pixel_peaker.setVisible(False)
+# class HistogramPlot(pg.PlotWidget):
+#     def __init__(self,
+#                  *args,
+#                  **kwargs
+#                  ):
+#         super().__init__(*args,
+#                          **kwargs
+#                          )
+#
+#         layout = QVBoxLayout()
+#         self.setLayout(layout)
+#
+#         self.num_bins = 65536//512
+#         self.num_pixels = VideoWorker.resolution[0] * VideoWorker.resolution[1]
+#         self.plot_area = self.plot()
+#
+#         plot_item = self.getPlotItem()
+#         plot_item.setTitle("Histogram")
+#         plot_item.setLabel('left', '# of Pixels')
+#         plot_item.setLabel('bottom', 'Pixel Intensity (a.u.)')
+#
+#         self.setLimits(xMin=0, xMax=MAX_INT_16 - 1 + 6144, yMin=0, yMax=self.num_pixels, minXRange=10000,
+#                        minYRange=10)
+#         self.plot_area.getViewBox().setXRange(min=0, max=MAX_INT_16 - 1 + 6144, padding=0.2)
+#         self.plot_area.getViewBox().setYRange(min=0, max=self.num_pixels, padding=0.2)
+#         x_axis = self.getAxis('bottom')
+#         x_axis.setTickSpacing(levels=[(65536//4, 0), (65536//16, 0)])
+#         x_axis.showLabel()
+#         y_axis = self.getAxis('left')
+#         y_axis.setTickSpacing(levels=[(self.num_pixels//2, 0), (self.num_pixels//4, 0), (self.num_pixels//8, 0)])
+#         y_axis.showLabel()
+#         self.disableAutoRange(axis=pg.ViewBox.XYAxes)
+#         self.setAntialiasing(True)
+#
+#     @pyqtSlot()
+#     def update_data(self, pixel_data: np.ndarray[np.uint16]):
+#         new_data = pixel_data.ravel()
+#         freq, bin_edges = np.histogram(new_data, bins=self.num_bins)
+#
+#         # This should allow the plot to be updated without having to re-link the axes every time
+#         self.plot_area.setData(bin_edges, freq, fillLevel=0, stepMode="center", brush=(0, 0, 255, 150))
 
 
-class AllCameraPlotsLayout(QHBoxLayout):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+# class SubPlotLayout(QVBoxLayout):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#
+#         self.linescan_plots = LinescanPlots()
+#
+#         self.histogram_thread = QThread()
+#         self.histogram_plot = HistogramPlot()
+#         self.histogram_plot.moveToThread(self.histogram_thread)
+#         self.histogram_thread.start()
+#
+#         self.linescan_plots.setVisible(True)
+#         self.histogram_plot.setVisible(True)
+#
+#         self.addWidget(self.linescan_plots.row_linescan)
+#         self.addWidget(self.linescan_plots.column_linescan)
+#         self.addWidget(self.histogram_plot)
 
-        self.subplots = SubPlotLayout()
 
-        self.video_feed_worker = VideoWorker()
-        self.video_feed = VideoFeed(resolution=VideoWorker.resolution)
-        self.video_feed.moveToThread(self.video_feed_worker)
-        self.video_feed_worker.start()
+# class VideoFeed(common.MainPlotViewer):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.data = np.zeros((VideoWorker.resolution[0],
+#                               VideoWorker.resolution[1]
+#                               ),
+#                              dtype=np.uint16
+#                              )
+#         self.image = pg.ImageItem(self.data,
+#                                   autoLevels=False,
+#                                   )
+#
+#         column_idx = VideoWorker.resolution[0] / 2
+#         row_idx = VideoWorker.resolution[1] / 2
+#
+#         self.column_linescan_marker = pg.InfiniteLine(pos=column_idx, angle=90, pen='r')
+#         self.row_linescan_marker = pg.InfiniteLine(pos=row_idx, angle=0, pen='r')
+#
+#         marker_color = QColor(Qt.darkYellow)
+#         marker_color.setAlphaF(0.5)
+#         marker_pen = QPen(marker_color)
+#         marker_pen.setStyle(Qt.PenStyle.DashLine)
+#
+#         self.column_linescan_marker.setPen(marker_pen)
+#         self.row_linescan_marker.setPen(marker_pen)
+#
+#         self.invertY(True)
+#         self.invertX(True)
+#
+#         self.column_linescan_marker.setVisible(False)
+#         self.row_linescan_marker.setVisible(False)
+#
+#         self.view_box = self.plotItem.getViewBox()
+#
+#         self.pixel_peaker = pg.TargetItem(pos=(0, 0),
+#                                           symbol='o',
+#                                           size=5,
+#                                           movable=False,
+#                                           pen='r',
+#                                           brush='r',
+#                                           )
+#         self.pixel_peaker.setVisible(False)
+#
+#         self.addItem(self.image)
+#         self.addItem(self.column_linescan_marker)
+#         self.addItem(self.row_linescan_marker)
+#         self.addItem(self.pixel_peaker)
+#
+#         self.plotItem.scene().sigMouseMoved.connect(self.mouse_moved)
+#
+#     def update_data(self, image_data: np.ndarray[np.uint16], central_lobe_xy: dict[str, int]):
+#         self.data = image_data
+#         self.image.setImage(self.data,
+#                             axisOrder='row-major',
+#                             autoLevels=False
+#                             )
+#
+#         self.column_linescan_marker.setPos(central_lobe_xy["x"])
+#         self.row_linescan_marker.setPos(central_lobe_xy["y"])
+#
+#     def are_linescan_markers_visible(self) -> bool:
+#         if self.column_linescan_marker.isVisible() and self.row_linescan_marker.isVisible():
+#             return True
+#         else:
+#             return False
+#
+#     def set_linescan_markers_visible(self, true_false: bool):
+#         self.column_linescan_marker.setVisible(true_false)
+#         self.row_linescan_marker.setVisible(true_false)
+#
+#     def mouse_moved(self, pos: QPointF):
+#         if not self.plotItem.sceneBoundingRect().contains(pos):
+#             if self.pixel_peaker.isVisible():
+#                 self.pixel_peaker.setVisible(False)
+#         else:
+#             mouse_point = self.view_box.mapSceneToView(pos)
+#             x_idx = round(mouse_point.x())
+#             y_idx = round(mouse_point.y())
+#             x_lim, y_lim = self.data.shape
+#             if 0 < x_idx < x_lim and 0 < y_idx < y_lim:
+#                 if not self.pixel_peaker.isVisible():
+#                     self.pixel_peaker.setVisible(True)
+#                 self.pixel_peaker.setPos(x_idx, y_idx)
+#                 value = self.data[x_idx, y_idx]
+#                 self.pixel_peaker.setLabel(str(value),
+#                                            labelOpts={'color': 'r',
+#                                                       'offset': (-5, -10),
+#                                                       'ensureInBounds': True
+#                                                       }
+#                                            )
+#             else:
+#                 if self.pixel_peaker.isVisible():
+#                     self.pixel_peaker.setVisible(False)
 
-        self.video_feed.setMinimumSize(*VideoWorker.resolution)
-        self.video_feed.resize(*VideoWorker.resolution)
 
-        self.addSpacing(20)
-        self.addWidget(self.video_feed, stretch=2)
-        self.addSpacing(10)
-        self.addLayout(self.subplots, stretch=1)
-        self.addSpacing(20)
+# class AllCameraPlotsLayout(QHBoxLayout):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#
+#         self.subplots = SubPlotLayout()
+#
+#         self.video_feed_worker = VideoWorker()
+#         self.video_feed = VideoFeed(resolution=VideoWorker.resolution)
+#         self.video_feed.moveToThread(self.video_feed_worker)
+#         self.video_feed_worker.start()
+#
+#         self.video_feed.setMinimumSize(*VideoWorker.resolution)
+#         self.video_feed.resize(*VideoWorker.resolution)
+#
+#         self.addSpacing(20)
+#         self.addWidget(self.video_feed, stretch=2)
+#         self.addSpacing(10)
+#         self.addLayout(self.subplots, stretch=1)
+#         self.addSpacing(20)
 
 
 class VideoWorker(QThread):
@@ -1051,7 +1003,6 @@ class BeamImagingMainWindow(QMainWindow):
         # User interaction.
         self.info = MonitorSetupInfo()
         self.plot_layouts = AllCameraPlotsLayout()
-        self.data_collection = DataCollection()
 
         self.video_feed = self.plot_layouts.video_feed
         self.video_feed_worker = self.plot_layouts.video_feed_worker

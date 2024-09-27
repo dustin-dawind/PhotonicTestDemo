@@ -6,9 +6,15 @@ from pathlib import Path
 
 from analysisfromtoml import analysis_scripts
 
+from rich import print
 from rich.pretty import pprint
 from rich.console import Console
 console = Console()
+
+import traceback
+
+
+sys.excepthook = lambda *args: (traceback.print_exception(*args), console.input("[red]\n\nPress any key to exit...[/]"))
 
 
 ReturnCode = int
@@ -114,9 +120,25 @@ def verify_input_with_user(input_dict: dict):
                              )
 
     def parse_response(res: str):
+        global analysis_config
+
         match res:
             case "y" | "yes" | "Y" | "Yes" | "YES":
-                return
+                paths = {}
+                if Path(analysis_config["input_dir_paths"]["liv"]).is_file():
+                    paths["liv"] = analysis_config["input_dir_paths"]["liv"]
+                if Path(analysis_config["input_dir_paths"]["rev_iv"]).is_file():
+                    paths["rev_iv"] = analysis_config["input_dir_paths"]["rev_iv"]
+
+                if len(paths) == 0:
+                    print("[red]No input files found. Please edit config.toml to specify input files...[/]")
+                    try_open_sublime()
+                    pprint(analysis_config := get_config_from_toml(), expand_all=True)
+                    parse_response(get_user_input(preamble="\nPlease confirm that the *edited* version of the run"
+                                                           " configuration is correct.")
+                                   )
+                else:
+                    return
             case "q" | "quit" | "Quit" | "QUIT":
                 print("Update cancelled... Exiting...")
                 sys.exit(0)
@@ -128,7 +150,7 @@ def verify_input_with_user(input_dict: dict):
                         raise RuntimeError("An unexpected error occurred while trying to open an editor for input.toml")
                 else:
                     try_open_sublime()
-                pprint(get_config_from_toml(), expand_all=True)
+                pprint(analysis_config := get_config_from_toml(), expand_all=True)
                 parse_response(get_user_input(preamble="\nPlease confirm that the *edited* version of the run"
                                                        " configuration is correct.")
                                )
@@ -154,4 +176,6 @@ if __name__ == "__main__":
                                       analysis_flags=analysis_config["analysis_flags"]["liv"],
                                       analysis_groupings=analysis_config["group_data_by"]
                                       )
+
+    console.input("[bright_green]Analysis complete. Press any key to exit...[/]")
 

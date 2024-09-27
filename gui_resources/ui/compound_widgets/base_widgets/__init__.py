@@ -5,6 +5,8 @@ from .labeled_widget import LabeledWidget
 from .min_max_slider import MinMaxSliderObject
 from .start_stop import StartStop
 from .underlined_label import UnderlinedLabel
+from .beam_traces import BeamTraceViewer
+from .camera_histogram import BeamHistogramPlot
 
 __all__ = [
     "BeamImageDisplay",
@@ -13,5 +15,7 @@ __all__ = [
     "LabeledWidget",
     "MinMaxSliderObject",
     "StartStop",
-    "UnderlinedLabel"
+    "UnderlinedLabel",
+    "BeamTraceViewer",
+    "BeamHistogramPlot"
 ]

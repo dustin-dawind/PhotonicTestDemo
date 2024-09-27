@@ -1,7 +1,10 @@
 from gui_resources.ui import CloseConfirmation
 import analysisfromtoml
 import instruments
-from gui_resources.ui.data_monitoring import LiveTestDataMonitor
+from .data_monitoring import (
+    LiveTestDataMonitor,
+    BeamImagingMonitor
+)
 
 from PyQt5.QtCore import (
     QEvent,
@@ -61,6 +64,7 @@ class MainWindow(MainWindowUI):
         self.instruments = instruments.InstrumentRegistry()
 
         self.data_monitor = None
+        self.beam_imaging_monitor = None
 
     def closeEvent(self, e: QEvent):
         confirmation = CloseConfirmation(parent=self)
@@ -80,6 +84,5 @@ class MainWindow(MainWindowUI):
         self.data_monitor.show()
 
     def show_example3(self):
-        # TODO:
-        #  * Come up with a third example
-        pass
+        self.beam_imaging_monitor = BeamImagingMonitor(driver_instance=self.instruments.camera)
+        self.beam_imaging_monitor.show()

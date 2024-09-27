@@ -168,6 +168,7 @@ if __name__ == "__main__":
         def __init__(self):
             super().__init__()
             self.emulator = CameraEmulator()
+            self.emulator.start_polling()
 
             self.emulator.query("FrameRate")
 

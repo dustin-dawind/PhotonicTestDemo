@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 from scipy.stats import linregress
+from rich import print
 import colorcet as cc
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
@@ -15,6 +16,7 @@ from matplotlib.ticker import (
 from test_class.test_class import file_timestamp_format
 
 colormap = cc.glasbey_dark
+save_dir = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\analysis_results")
 
 
 def liv_analysis(data_path: Path,
@@ -34,7 +36,8 @@ def liv_analysis(data_path: Path,
     plot_mean_livs(mean_df,
                    analysis_flags=analysis_flags,
                    analysis_groupings=analysis_groupings,
-                   title=title
+                   title=title,
+                   filename=get_filename(data_path)
                    )
 
 
@@ -46,11 +49,16 @@ def generate_title(data_path: Path):
     title = f"Mean LIV Analysis \u2014 {' '.join(filename[:-1])} \u2014 " + timestamp.strftime("%X %x")
     return title
 
+def get_filename(data_path: Path):
+    filename = data_path.name
+
+
 
 def plot_mean_livs(df: pd.DataFrame,
                    analysis_flags: dict[str, bool],
                    analysis_groupings: dict[str, bool],
                    title: str = None,
+                   filename: str = None
                    ):
     analysis_groupings = [k for k in analysis_groupings.keys() if analysis_groupings[k] is True]
 
@@ -230,7 +238,8 @@ def plot_mean_livs(df: pd.DataFrame,
                    handlelength=1,
                    fontsize=12
                    )
-
+    fig.savefig(save_dir / f"{filename}.png")
+    print("[bright_magenta]Figure saved as:[/]", f"[bright_green]{save_dir / filename}.png[/]")
     plt.show()
 
 
@@ -251,7 +260,7 @@ def format_threshold_plot(ax: plt.Axes,
                   fontsize=10
                   )
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax.set_xlabel(','.join(analysis_groupings),
+    ax.set_xlabel(', '.join(analysis_groupings),
                   fontsize=12
                   )
     ax.set_ylabel("Threshold Current (mA)",
@@ -268,7 +277,7 @@ def format_slope_eff_plot(ax: plt.Axes,
     all_slope_eff_unc = [processed_data[name]["slope_eff_unc"] for name in processed_data.keys()]
 
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
-    ax.set_xlabel(','.join(data_labels),
+    ax.set_xlabel(', '.join(data_labels),
                   fontsize=12
                   )
     ax.set_ylabel("Slope Efficiency",
@@ -320,8 +329,8 @@ def norm_y_ticks_w_uncertainties(ax: plt.Axes,
 
 
 if __name__ == '__main__':
-    # path = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\test_results\W1234_F1-10_D1-100_20240925-122833.csv")
-    path = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
+    path = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
+    # path = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
 
     liv_analysis(path,
                  analysis_flags={"threshold": True, "slope_efficiency": True},

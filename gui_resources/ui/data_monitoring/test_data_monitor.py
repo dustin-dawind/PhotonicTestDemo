@@ -163,9 +163,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.controls.stop_btn.clicked.connect(self.stop_test)
         self.request_stop.connect(self.test_class.request_stop)
 
+        self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.started.connect(self.test_class.run_test)
         self._test_thread.started.connect(self.controls.disable_file_selection)
-        self._test_thread.started.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.connect(self._test_thread.deleteLater)
         self._test_thread.finished.connect(self.controls.enable_file_selection)
@@ -190,9 +190,9 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self.controls.stop_btn.clicked.disconnect(self.stop_test)
         self.request_stop.disconnect(self.test_class.request_stop)
 
+        self._test_thread.started.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.started.disconnect(self.test_class.run_test)
         self._test_thread.started.disconnect(self.controls.disable_file_selection)
-        self._test_thread.started.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self.controls.start_stop.toggle_enabled_button)
         self._test_thread.finished.disconnect(self._test_thread.deleteLater)
         self._test_thread.finished.disconnect(self.controls.enable_file_selection)

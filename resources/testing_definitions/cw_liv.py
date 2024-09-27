@@ -17,7 +17,7 @@ class Test(TestClass):
                  # instruments: dict[str, PossibleInstruments],
                  device_definitions: pd.DataFrame
                  ):
-        super().__init__()
+        super().__init__("CW Liv")
 
         # The test_data_monitor will handle creating instance attributes for these instruments.
         # They may be referenced as `self.power_meter` and `self.psu` within `self.start_test()`
@@ -51,7 +51,7 @@ class Test(TestClass):
                 eff = 0
                 if (e_power := i_actual * v_actual) != 0:
                     eff = power / e_power
-                if eff > 1 or eff < 0 or setpoint < 150:
+                if eff > 1 or eff < 0 or power < 10:
                     eff = 0
 
                 # This breaks if there is ever more than 256 devices to test, as the colormap only has 256 colors.

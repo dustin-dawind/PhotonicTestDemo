@@ -1,12 +1,19 @@
+import sys
 import time
 from datetime import datetime
 import functools
 from collections import defaultdict
 from pathlib import Path
+import traceback
 
 import pandas as pd
 from rich import print
 from rich.table import Table
+
+from email_notifier import (
+    notify_success,
+    notify_error
+)
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import (
@@ -14,6 +21,8 @@ from PyQt5.QtCore import (
     QObject,
     pyqtSlot,
 )
+
+
 
 file_timestamp_format = "%Y%m%d-%H%M%S"
 
@@ -33,8 +42,11 @@ class TestClass(QObject):
     update_test_status_signal = pyqtSignal(str)
     test_finished_signal = pyqtSignal()
 
-    def __init__(self, **instruments):
+    def __init__(self, test_name: str, **instruments):
         super().__init__()
+
+        self.test_name = test_name
+
         self._start_time = None
         self.needed_instruments = None
         self.instruments = None
@@ -46,6 +58,8 @@ class TestClass(QObject):
 
         self.filename = None
         self.save_directory = Path(Path.cwd() / "resources" / "test_results")
+
+
 
     @pyqtSlot()
     def request_stop(self):
@@ -156,17 +170,24 @@ class TestClass(QObject):
 def standard_test(overloaded_run_test):
     @functools.wraps(overloaded_run_test)
     def fully_wrapped_start_test(self, *args, **kwargs):
-        for instrument in self.needed_instruments:
-            getattr(self, instrument).reset()
+        try:
+            for instrument in self.needed_instruments:
+                getattr(self, instrument).reset()
 
-        start_time = time.perf_counter()
-        overloaded_run_test(self, *args, **kwargs)
-        self._print_time_analytics(start_time)
+            start_time = time.perf_counter()
+            overloaded_run_test(self, *args, **kwargs)
+            self._print_time_analytics(start_time)
 
-        for instrument in self.needed_instruments:
-            getattr(self, instrument).reset()
+            for instrument in self.needed_instruments:
+                getattr(self, instrument).reset()
 
-        self._save_to_generated_filename()
+            self._save_to_generated_filename()
+
+        except Exception:
+            notify_error(self.test_name, traceback.format_exc())
+            raise
+        else:
+            notify_success(self.test_name)
 
     return fully_wrapped_start_test
 

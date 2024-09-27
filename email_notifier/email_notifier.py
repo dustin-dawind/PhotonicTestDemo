@@ -21,5 +21,18 @@ def notify_success(test_name: str):
         smtp.send_message(msg)
 
 
+def notify_error(test_name: str, traceback: str):
+    msg = EmailMessage()
+    msg["Subject"] = f"ERROR: {test_name} Test Failed!!!"
+    msg["From"] = FROM
+    msg["To"] = ERROR
+    msg.set_content(traceback)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.ehlo()
+        smtp.login(FROM, PASSWORD)
+        smtp.send_message(msg)
+
+
 if __name__ == '__main__':
     notify_success("Debugging")
