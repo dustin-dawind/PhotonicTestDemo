@@ -1,12 +1,12 @@
 import numpy as np
 import colorcet as cc
+import pandas as pd
 
-import pyqtgraph as pg
 from PyQt5.QtCore import (
     Qt,
     pyqtSlot,
 )
-from PyQt5.QtWidgets import QApplication
+import pyqtgraph as pg
 
 
 class DataSeries:
@@ -15,11 +15,11 @@ class DataSeries:
         self._y2_data = []
 
         self.y1_series = pg.PlotDataItem(pen=pg.mkPen(color=color,
-                                                      width=2,
+                                                      width=1,
                                                       )
                                          )
         self.y2_series = pg.PlotDataItem(pen=pg.mkPen(color=color,
-                                                      width=2,
+                                                      width=1,
                                                       style=Qt.DashLine
                                                       )
                                          )
@@ -91,13 +91,13 @@ class DataPlotter(DataPlotterUI):
         self.plotItem.vb.sigResized.connect(self._update_views)
 
     @pyqtSlot(int)
-    def add_series(self, device_number: int):
-        if device_number in self.all_data_series:
+    def add_series(self, device_info: pd.Series):
+        if (id_num := device_info["Device ID"] + (device_info["Field ID"] * 100)) in self.all_data_series:
             return
         else:
-            self.active_data_series = device_number
-            new_series = DataSeries(color=self.colormap[device_number])
-            self.all_data_series[device_number] = new_series
+            self.active_data_series = id_num
+            new_series = DataSeries(color=self.colormap[device_info["Field ID"]])
+            self.all_data_series[id_num] = new_series
 
             self.addItem(new_series.y1_series)
             self.y2_view.addItem(new_series.y2_series)
@@ -187,11 +187,11 @@ class DataPlotter(DataPlotterUI):
                           **label_style
                           )
 
-    def change_active_data_series(self, device_number: int):
-        if device_number not in self.all_data_series:
-            self.add_series(device_number)
+    def change_active_data_series(self, device_info: pd.Series):
+        if device_info["Device ID"] + (device_info["Field ID"] * 100) not in self.all_data_series:
+            self.add_series(device_info)
         else:
-            self.active_data_series = device_number
+            self.active_data_series = device_info["Device ID"] + (device_info["Field ID"] * 100)
 
     @pyqtSlot(bool)
     def hide_y1(self, state: bool):
@@ -211,11 +211,11 @@ class DataPlotter(DataPlotterUI):
             for series in self.all_data_series.values():
                 series.y2_series.show()
 
-    @pyqtSlot(int, float, float)
-    @pyqtSlot(int, float, float, float)
-    def append_data(self, device_num: int, x: float, *y: float):
-        if device_num != self.active_data_series:
-            self.change_active_data_series(device_num)
+    @pyqtSlot(pd.Series, float, float)
+    @pyqtSlot(pd.Series, float, float, float)
+    def append_data(self, device_info: pd.Series, x: float, *y: float):
+        if device_info["Device ID"] + (device_info["Field ID"] * 100) != self.active_data_series:
+            self.change_active_data_series(device_info)
         self.all_data_series[self.active_data_series].append(x, *y)
 
         if not self.legend.isVisible():

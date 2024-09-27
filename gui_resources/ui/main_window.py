@@ -5,7 +5,6 @@ from gui_resources.ui.data_monitoring import LiveTestDataMonitor
 
 from PyQt5.QtCore import (
     QEvent,
-    QThread
 )
 from PyQt5.QtWidgets import (
     QWidget,

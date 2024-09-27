@@ -4,10 +4,14 @@ import tomllib
 import subprocess
 from pathlib import Path
 
-from rich.pretty import pprint
+from analysisfromtoml import analysis_scripts
 
+from rich.pretty import pprint
 from rich.console import Console
 console = Console()
+
+
+ReturnCode = int
 
 
 # Check if the script is being run in a frozen environment (e.g. as an executable)
@@ -29,16 +33,9 @@ path_to_config_toml = path_to_package / Path(r"config.toml")
 path_to_notepad_plus_plus = Path(r'C:\Program Files\Sublime Text\sublime_text.exe')
 
 
-config_vars = {
-    "LIV_DATA"    : None,
-    "REV_IV_DATA": None,
-    "OUTPUT_PATH": None,
-}
-
-
 def launch_cmd():
     path_to_module = path_to_package / Path(r"analysis_from_toml.py")
-    os.system(f"start cmd.exe /k python \"{path_to_module}\"")
+    os.system(f"start cmd.exe /c python \"{path_to_module}\"")
 
 
 def get_config_from_toml():
@@ -49,15 +46,17 @@ def get_config_from_toml():
     config_toml : dict
         The contents of config.toml
     """
-    with open(path_to_config_toml, "rb") as f:
-        config = tomllib.load(f)
+    try:
+        with open(path_to_config_toml, "rb") as f:
+            return tomllib.load(f)
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        try_open_sublime()
 
-    config_vars["LIV_DIR"] = config["input_dir_paths"]["liv"]
-    config_vars["SPECTRA_DIR"] = config["input_dir_paths"]["spectra"]
-    config_vars["OUTPUT_PATH"] = config["output_filepath"]
-    config_vars["use_sublime"] = config["edit_with_sublime_text"]
-
-    return config
+        try:
+            with open(path_to_config_toml, "rb") as f:
+                return tomllib.load(f)
+        except (FileNotFoundError, tomllib.TOMLDecodeError):
+            raise
 
 
 def clear_console():
@@ -78,7 +77,30 @@ def clear_console():
     console.print("\x1b[H\x1b[2J")
 
 
-ReturnCode = int
+def try_open_sublime():
+    try:
+        # Try using sublime text first if possible
+        sublime = subprocess.Popen([path_to_notepad_plus_plus, path_to_config_toml])
+        sublime.wait()
+        return_code = sublime.returncode
+        if return_code != 0:
+            raise subprocess.SubprocessError
+
+    except (subprocess.SubprocessError, OSError):
+        # Fall back to regular notepad if notepad++ isn't found or if it crashes for some reason
+        return_code = open_notepad()
+        if return_code != 0:
+            raise RuntimeError("An unexpected error occurred while trying to open an editor for input.toml")
+    finally:
+        # Clear the console window so it doesn't get cluttered
+        os.system('cls')
+
+
+def open_notepad() -> ReturnCode:
+
+    notepad = subprocess.Popen(['notepad.exe', path_to_config_toml])
+    notepad.wait()
+    return notepad.returncode
 
 
 def verify_input_with_user(input_dict: dict):
@@ -91,18 +113,6 @@ def verify_input_with_user(input_dict: dict):
                              "\n"
                              )
 
-    def open_sublime() -> ReturnCode:
-        sublime = subprocess.Popen([path_to_notepad_plus_plus, path_to_config_toml])
-        sublime.wait()
-
-        return sublime.returncode
-
-    def open_notepad() -> ReturnCode:
-        notepad = subprocess.Popen(['notepad.exe', path_to_config_toml])
-        notepad.wait()
-
-        return notepad.returncode
-
     def parse_response(res: str):
         match res:
             case "y" | "yes" | "Y" | "Yes" | "YES":
@@ -111,28 +121,14 @@ def verify_input_with_user(input_dict: dict):
                 print("Update cancelled... Exiting...")
                 sys.exit(0)
             case "e" | "edit" | "Edit" | "EDIT":
-                if config_vars["use_sublime"] is False:
+                if input_dict["edit_with_sublime_text"] is False:
                     # Try using notepad
                     return_code = open_notepad()
                     if return_code != 0:
                         raise RuntimeError("An unexpected error occurred while trying to open an editor for input.toml")
-
                 else:
-                    try:
-                        # Try using sublime text first if possible
-                        return_code = open_sublime()
-                        if return_code != 0:
-                            raise subprocess.SubprocessError
-                    except (subprocess.SubprocessError, OSError):
-                        # Fall back to regular notepad if notepad++ isn't found or if it crashes for some reason
-                        return_code = open_notepad()
-                        if return_code != 0:
-                            raise RuntimeError("An unexpected error occurred while trying to open an editor for input.toml")
-                    finally:
-                        # Clear the console window so it doesn't get cluttered
-                        os.system('cls')
-
-                pprint(get_config_from_toml(), indent_guides=False)
+                    try_open_sublime()
+                pprint(get_config_from_toml(), expand_all=True)
                 parse_response(get_user_input(preamble="\nPlease confirm that the *edited* version of the run"
                                                        " configuration is correct.")
                                )
@@ -142,7 +138,7 @@ def verify_input_with_user(input_dict: dict):
 
     os.system('cls')
 
-    pprint(input_dict, indent_guides=False)
+    pprint(input_dict, expand_all=True)
     parse_response(get_user_input(preamble="\nPlease confirm that the above run configuration is correct."))
 
 
@@ -150,4 +146,12 @@ if __name__ == "__main__":
     if is_frozen:
         console.clear()
 
-    verify_input_with_user(get_config_from_toml())
+    analysis_config = get_config_from_toml()
+    verify_input_with_user(analysis_config)
+
+    if analysis_config["input_dir_paths"]["liv"] != '':
+        analysis_scripts.liv_analysis(data_path=Path(analysis_config["input_dir_paths"]["liv"]),
+                                      analysis_flags=analysis_config["analysis_flags"]["liv"],
+                                      analysis_groupings=analysis_config["group_data_by"]
+                                      )
+

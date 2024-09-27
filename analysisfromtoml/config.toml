@@ -3,10 +3,15 @@ edit_with_sublime_text = true
 output_filepath = '''C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\analysis_results'''
 
 [input_dir_paths]
-    liv = '''C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\test_results\data.csv'''
+    liv = '''C:\Users\mlarkins\Local Data\Programming\Automation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv'''
     rev_iv = ''
 
 [analysis_flags]
     liv.threshold = true
     liv.slope_efficiency = true
+
     rev_iv.analysis = false
+
+[group_data_by]
+    "Wafer ID" = true
+    "Field ID" = true

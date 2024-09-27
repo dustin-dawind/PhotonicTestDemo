@@ -15,10 +15,12 @@ from PyQt5.QtCore import (
     pyqtSlot,
 )
 
+file_timestamp_format = "%Y%m%d-%H%M%S"
+
 
 class TestClass(QObject):
-    plot_data_signal = pyqtSignal([int, float, float],
-                                  [int, float, float, float]
+    plot_data_signal = pyqtSignal([pd.Series, float, float],
+                                  [pd.Series, float, float, float]
                                   )
     set_axes_titles_signal = pyqtSignal([str, str],
                                         [str, str, str]
@@ -68,9 +70,9 @@ class TestClass(QObject):
     def send_for_plotting(self, *data):
         match len(data):
             case 3:
-                self.plot_data_signal[int, float, float].emit(*data)
+                self.plot_data_signal[pd.Series, float, float].emit(*data)
             case 4:
-                self.plot_data_signal[int, float, float, float].emit(*data)
+                self.plot_data_signal[pd.Series, float, float, float].emit(*data)
             case _:
                 raise ValueError(f'Expected 3 or 4 arguments, got {len(data)}')
 
@@ -129,7 +131,7 @@ class TestClass(QObject):
             devices = f"D{devices[0]}"
         filename = f"{wafers}_{fields}_{devices}"
 
-        full_filepath = self.save_directory / f'{filename}_{datetime.now().strftime("%Y%m%d-%H%M%S")}.csv'
+        full_filepath = self.save_directory / f'{filename}_{datetime.now().strftime(file_timestamp_format)}.csv'
         output = pd.DataFrame.from_dict(self.data)
         output.to_csv(full_filepath, index=False)
         print(f"\n[bright_magenta]Results saved to[/] [bright_green]'{full_filepath}'[/]")

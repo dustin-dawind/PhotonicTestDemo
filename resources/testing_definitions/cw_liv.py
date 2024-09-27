@@ -58,11 +58,11 @@ class Test(TestClass):
                 # Can be fixed by reducing each device set to its mean plot after when a new device set is started
                 # (i.e. when the wafer or field ID changes)
 
-                # self.send_for_plotting(current_device,
-                #                        i_actual,
-                #                        power,
-                #                        eff
-                #                        )
+                self.send_for_plotting(row,
+                                       i_actual,
+                                       power,
+                                       eff
+                                       )
 
                 self.data["Wafer ID"].append(row["Wafer ID"])
                 self.data["Field ID"].append(row["Field ID"])

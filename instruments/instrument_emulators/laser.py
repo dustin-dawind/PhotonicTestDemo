@@ -16,11 +16,11 @@ class CharacteristicParameters:
     exp_denom: float = v_th * non_ideal_factor
     threshold: float = 100
     ase_multiplier: float = 70
-    slope_eff: float = 0.7
+    slope_eff: float = 0.8
     i_rev_sat: float = 10
 
     def randomize(self):
-        self.threshold = np.random.uniform(80, 120)
+        self.threshold = np.random.uniform(50, 150)
         self.ase_multiplier = np.random.uniform(60, 80)
         self.slope_eff = np.random.uniform(0.6, 0.8)
         self.i_rev_sat = np.random.uniform(8, 20)
@@ -51,7 +51,7 @@ class LaserEmulator(QObject):
 
     def _f_liv(self, current):
         def ase_func(x):
-            return np.exp(x * self._ase_multiplier) - 1
+            return np.exp(x / self._ase_multiplier) - 1
 
         def lasing_func(x):
             return self._slope_eff * (x - self._threshold) + ase_func(self._threshold)
@@ -64,6 +64,7 @@ class LaserEmulator(QObject):
             else:
                 return 0
         else:
+            self._previous_device = pd.Series(index=["Wafer ID", "Field ID", "Device ID"])
             return 0
 
     def _f_v_from_i(self, input_current):
@@ -101,12 +102,15 @@ class LaserEmulator(QObject):
         if self._previous_device["Wafer ID"] == np.nan:
             pass
         elif new_device["Wafer ID"] != self._previous_device["Wafer ID"] or new_device["Field ID"] != self._previous_device["Field ID"]:
+            self._previous_device["Wafer ID"] = new_device["Wafer ID"]
+            self._previous_device["Field ID"] = new_device["Field ID"]
             self._base_parameters.randomize()
 
         # LIV parameters
         self._threshold = np.random.normal(self._base_parameters.threshold, 10)
-        self._ase_multiplier = 1 / np.random.normal(self._base_parameters.ase_multiplier, 5)
-        self._slope_eff = np.random.normal(self._base_parameters.slope_eff, 0.025)
+        self._ase_multiplier = np.random.normal(self._base_parameters.ase_multiplier, 5)
+        self._slope_eff = np.random.normal(self._base_parameters.slope_eff, 0.01)
+        # print("slope_eff", self._slope_eff)
 
         # RevIV parameters
         self._non_ideal_factor = np.random.normal(self._base_parameters.non_ideal_factor, 0.025)

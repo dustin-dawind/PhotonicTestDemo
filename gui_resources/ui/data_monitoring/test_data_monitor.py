@@ -144,8 +144,8 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         # all of these signals need to be manually disconnected because they are connected every time the script is
         # loaded, meaning they will double-up if not explicitly disconnected whenever the test script is stopped
 
-        self.test_class.plot_data_signal[int, float, float].connect(self.plotter.append_data)
-        self.test_class.plot_data_signal[int, float, float, float].connect(self.plotter.append_data)
+        self.test_class.plot_data_signal[pd.Series, float, float].connect(self.plotter.append_data)
+        self.test_class.plot_data_signal[pd.Series, float, float, float].connect(self.plotter.append_data)
         self.test_class.set_axes_titles_signal[str, str].connect(self.plotter.set_axes_titles)
         self.test_class.set_axes_titles_signal[str, str, str].connect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.connect(self._instrument_registry.laser_emulator.swap_device)
@@ -172,8 +172,8 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         self._test_thread.finished.connect(self._disconnect_signals)
 
     def _disconnect_signals(self):
-        self.test_class.plot_data_signal[int, float, float].disconnect(self.plotter.append_data)
-        self.test_class.plot_data_signal[int, float, float, float].disconnect(self.plotter.append_data)
+        self.test_class.plot_data_signal[pd.Series, float, float].disconnect(self.plotter.append_data)
+        self.test_class.plot_data_signal[pd.Series, float, float, float].disconnect(self.plotter.append_data)
         self.test_class.set_axes_titles_signal[str, str].disconnect(self.plotter.set_axes_titles)
         self.test_class.set_axes_titles_signal[str, str, str].disconnect(self.plotter.set_axes_titles)
         self.test_class.new_device_signal.disconnect(self._instrument_registry.laser_emulator.swap_device)
