@@ -1,4 +1,5 @@
 from copy import deepcopy
+
 import numpy as np
 
 from instruments.instrument_emulators.abc import (
@@ -11,14 +12,19 @@ from PyQt5.QtCore import (
     QReadWriteLock,
     pyqtSignal,
     QTimer,
-    QMutex, pyqtSlot
+    QMutex,
+    pyqtSlot
 )
+
 
 class CameraEmulator(QObject, AbstractEmulator):
     frame_ready = pyqtSignal(np.ndarray)
 
     resolution = (640, 512)
     baseline_offset = 1000
+
+    started = pyqtSignal()
+    stopped = pyqtSignal()
 
     located_at = "COM4"
     settings = {"FrameData"    : Setting(np.zeros(resolution, dtype=np.uint16), readonly=True),
@@ -66,11 +72,13 @@ class CameraEmulator(QObject, AbstractEmulator):
     def start_polling(self):
         self._frame_timer.start()
         self._jitter_timer.start()
+        self.started.emit()
 
     @pyqtSlot()
     def stop_polling(self):
         self._frame_timer.stop()
         self._jitter_timer.stop()
+        self.stopped.emit()
 
     def query(self, command: str):
         try:
@@ -124,6 +132,8 @@ class CameraEmulator(QObject, AbstractEmulator):
         image = (raw_beam_data * integration_time + background) * gain + offset
 
         image = image.clip(0, 65535).astype(np.uint16)
+
+        self.frame_ready.emit(image)
 
         self.settings_mutex.lockForWrite()
         self.settings["FrameData"].value = image

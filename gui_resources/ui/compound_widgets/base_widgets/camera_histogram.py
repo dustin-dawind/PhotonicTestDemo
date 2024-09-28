@@ -40,7 +40,7 @@ class BeamHistogramPlot(pg.PlotWidget):
         self.disableAutoRange(axis=pg.ViewBox.XYAxes)
         self.setAntialiasing(True)
 
-    @pyqtSlot()
+    @pyqtSlot(np.ndarray)
     def update_data(self, pixel_data: np.ndarray[np.uint16]):
         new_data = pixel_data.ravel()
         freq, bin_edges = np.histogram(new_data, bins=self.num_bins)
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    window = HistogramPlot()
+    window = BeamHistogramPlot()
     window.show()
 
     sys.exit(app.exec_())

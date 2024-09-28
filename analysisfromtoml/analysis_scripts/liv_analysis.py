@@ -16,7 +16,7 @@ from matplotlib.ticker import (
 from test_class.test_class import file_timestamp_format
 
 colormap = cc.glasbey_dark
-save_dir = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\analysis_results")
+save_dir = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\analysis_results")
 
 
 def liv_analysis(data_path: Path,
@@ -49,9 +49,9 @@ def generate_title(data_path: Path):
     title = f"Mean LIV Analysis \u2014 {' '.join(filename[:-1])} \u2014 " + timestamp.strftime("%X %x")
     return title
 
-def get_filename(data_path: Path):
-    filename = data_path.name
 
+def get_filename(data_path: Path):
+    return data_path.name
 
 
 def plot_mean_livs(df: pd.DataFrame,
@@ -329,8 +329,8 @@ def norm_y_ticks_w_uncertainties(ax: plt.Axes,
 
 
 if __name__ == '__main__':
-    path = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
-    # path = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
+    # path = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
+    path = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
 
     liv_analysis(path,
                  analysis_flags={"threshold": True, "slope_efficiency": True},

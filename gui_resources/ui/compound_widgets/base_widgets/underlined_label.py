@@ -11,7 +11,7 @@ from PyQt5.QtCore import (
 
 
 class UnderlinedLabel(QWidget):
-    def __init__(self,label="", parent=None):
+    def __init__(self, label="", parent=None):
         super().__init__(parent=parent)
 
         layout = QVBoxLayout()

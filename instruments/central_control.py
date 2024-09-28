@@ -29,7 +29,7 @@ class InstrumentRegistry(QObject):
 
         # Connect instruments to their emulators. The GUI will control the emulators via these "driver" interfaces
         self.camera = drivers.Camera(parent=self)
-        self.camera.connect(self.camera_emulator)
+        # self.camera.connect(self.camera_emulator)
 
         self.power_meter = drivers.PowerMeter(parent=self)
         self.power_meter.connect(self.power_meter_emulator)

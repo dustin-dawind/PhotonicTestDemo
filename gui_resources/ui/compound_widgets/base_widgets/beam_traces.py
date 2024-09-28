@@ -4,6 +4,7 @@ import pyqtgraph as pg
 from PyQt5.QtCore import (
     QRectF,
     QEvent,
+    pyqtSlot,
 )
 
 
@@ -86,6 +87,7 @@ class BeamTraceViewer(BeamTraceViewerUI):
             init_data = np.random.normal(3000, 800, x_axis_length)
             self.plot_area.setData(init_data)
 
+    @pyqtSlot(np.ndarray)
     def update_data(self,
                     linescan_data: np.ndarray[np.uint16],
                     ):
@@ -95,7 +97,6 @@ class BeamTraceViewer(BeamTraceViewerUI):
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
-
 
     app = QApplication(sys.argv)
 

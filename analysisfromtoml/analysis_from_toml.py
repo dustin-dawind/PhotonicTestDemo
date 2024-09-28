@@ -2,6 +2,8 @@ import sys
 import os
 import tomllib
 import subprocess
+import ctypes
+from ctypes import wintypes
 from pathlib import Path
 
 from analysisfromtoml import analysis_scripts
@@ -37,6 +39,47 @@ path_to_config_toml = path_to_package / Path(r"config.toml")
 
 # TODO: Reconfigure path to sublime_text.exe to the portable version kept on flash drive when that's set up
 path_to_notepad_plus_plus = Path(r'C:\Program Files\Sublime Text\sublime_text.exe')
+
+kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+user32 = ctypes.WinDLL('user32', use_last_error=True)
+
+
+FLASHW_STOP = 0
+FLASHW_CAPTION = 0x00000001
+FLASHW_TRAY = 0x00000002
+FLASHW_ALL = 0x00000003
+FLASHW_TIMER = 0x00000004
+FLASHW_TIMERNOFG = 0x0000000C
+
+
+class FLASHWINFO(ctypes.Structure):
+    _fields_ = (('cbSize', wintypes.UINT),
+                ('hwnd', wintypes.HWND),
+                ('dwFlags', wintypes.DWORD),
+                ('uCount', wintypes.UINT),
+                ('dwTimeout', wintypes.DWORD))
+
+    def __init__(self, hwnd, flags=FLASHW_TRAY, count=5, timeout_ms=0):
+        self.cbSize = ctypes.sizeof(self)
+        self.hwnd = hwnd
+        self.dwFlags = flags
+        self.uCount = count
+        self.dwTimeout = timeout_ms
+
+
+kernel32.GetConsoleWindow.restype = wintypes.HWND
+user32.FlashWindowEx.argtypes = (ctypes.POINTER(FLASHWINFO),)
+user32.IsIconic.argtypes = (wintypes.HWND,)
+user32.IsIconic.restype = wintypes.BOOL
+
+
+def flash_console_icon(n_times: int = 5):
+    console_handle = kernel32.GetConsoleWindow()
+    if not console_handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    winfo = FLASHWINFO(console_handle, n_times)
+    previous_state = user32.FlashWindowEx(ctypes.byref(winfo))
+    return previous_state
 
 
 def launch_cmd():
@@ -112,6 +155,9 @@ def open_notepad() -> ReturnCode:
 def verify_input_with_user(input_dict: dict):
 
     def get_user_input(preamble: str = None) -> str:
+        if user32.IsIconic(kernel32.GetConsoleWindow()):
+            flash_console_icon(10)
+
         if preamble is not None:
             console.print(preamble, end="")
         return console.input("\n([yellow]y[/] \[[yellow]yes[/]]/ [yellow]e[/] \[[yellow]edit[/]]/"

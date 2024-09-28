@@ -19,7 +19,7 @@ class StartStopUI(QWidget):
 
         self.start_btn = QPushButton(start_text)
         self.start_btn.setSizePolicy(QSizePolicy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
-        self.start_btn.setContentsMargins(5, 2, 2, 2)
+        self.start_btn.setContentsMargins(5, 2, 5, 2)
 
         self.stop_btn = QPushButton(stop_text)
         self.stop_btn.setSizePolicy(QSizePolicy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
@@ -52,6 +52,7 @@ class StartStop(StartStopUI):
         else:
             self.stop_btn.setEnabled(False)
             self.start_btn.setEnabled(True)
+
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication

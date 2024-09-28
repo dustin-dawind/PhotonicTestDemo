@@ -8,6 +8,7 @@ from .data_monitoring import (
 
 from PyQt5.QtCore import (
     QEvent,
+    QThread
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -84,5 +85,5 @@ class MainWindow(MainWindowUI):
         self.data_monitor.show()
 
     def show_example3(self):
-        self.beam_imaging_monitor = BeamImagingMonitor(driver_instance=self.instruments.camera)
+        self.beam_imaging_monitor = BeamImagingMonitor(camera_emulator=self.instruments.camera_emulator)
         self.beam_imaging_monitor.show()

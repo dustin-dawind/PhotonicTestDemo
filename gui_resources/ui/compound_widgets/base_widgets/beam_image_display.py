@@ -25,16 +25,11 @@ class BeamImageDisplayUI(pg.PlotWidget):
                              )
 
         self.image_item = pg.ImageItem(autoLevels=False, axisOrder='row-major')
-        self.addItem(self.image_item)
 
         plot_item = self.getPlotItem()
         plot_item.setAspectLocked()
         plot_item.showAxes(False)
         self.setBackground('w')
-
-        self.image = pg.ImageItem(self.data,
-                                  autoLevels=False,
-                                  )
 
         column_idx = 640 / 2
         row_idx = 512 / 2
@@ -53,7 +48,6 @@ class BeamImageDisplayUI(pg.PlotWidget):
         self.column_trace_marker.setVisible(False)
         self.row_trace_marker.setVisible(False)
 
-
         self.view_box = self.plotItem.getViewBox()
 
         self.pixel_peaker = pg.TargetItem(pos=(0, 0),
@@ -65,7 +59,7 @@ class BeamImageDisplayUI(pg.PlotWidget):
                                           )
         self.pixel_peaker.setVisible(False)
 
-        self.addItem(self.image)
+        self.addItem(self.image_item)
         self.addItem(self.column_trace_marker)
         self.addItem(self.row_trace_marker)
         self.addItem(self.pixel_peaker)
@@ -75,17 +69,9 @@ class BeamImageDisplay(BeamImageDisplayUI):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
+        self.image_item.setImage(np.zeros((512, 640), dtype=np.uint16) + 5000, autoLevels=False)
+
         self.plotItem.scene().sigMouseMoved.connect(self.mouse_moved)
-
-    def are_trace_markers_visible(self) -> bool:
-        if self.column_trace_marker.isVisible() and self.row_trace_marker.isVisible():
-            return True
-        else:
-            return False
-
-    def set_trace_markers_visible(self, true_false: bool):
-        self.column_trace_marker.setVisible(true_false)
-        self.row_trace_marker.setVisible(true_false)
 
     def mouse_moved(self, pos: QPointF):
         if not self.plotItem.sceneBoundingRect().contains(pos):
@@ -111,7 +97,15 @@ class BeamImageDisplay(BeamImageDisplayUI):
                 if self.pixel_peaker.isVisible():
                     self.pixel_peaker.setVisible(False)
 
-    @pyqtSlot(np.ndarray)
+    def show_trace_markers(self):
+        self.column_trace_marker.setVisible(True)
+        self.row_trace_marker.setVisible(True)
+
+    def hide_trace_markers(self):
+        self.column_trace_marker.setVisible(False)
+        self.row_trace_marker.setVisible(False)
+
+    @pyqtSlot(np.ndarray, dict)
     def update_image(self,
                      image: np.ndarray,
                      central_lobe_xy: dict[str, int],
@@ -120,8 +114,10 @@ class BeamImageDisplay(BeamImageDisplayUI):
                                  axis_order='row-major',
                                  autoLevels=False
                                  )
+        self.data = image
 
-
+        self.column_trace_marker.setPos(central_lobe_xy["x"])
+        self.row_trace_marker.setPos(central_lobe_xy["y"])
 
 
 if __name__ == "__main__":

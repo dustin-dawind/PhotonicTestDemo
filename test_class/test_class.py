@@ -1,4 +1,3 @@
-import sys
 import time
 from datetime import datetime
 import functools
@@ -181,13 +180,15 @@ def standard_test(overloaded_run_test):
             for instrument in self.needed_instruments:
                 getattr(self, instrument).reset()
 
-            self._save_to_generated_filename()
-
         except Exception:
             notify_error(self.test_name, traceback.format_exc())
             raise
         else:
-            notify_success(self.test_name)
+            if not self.user_requested_stop:
+                self._save_to_generated_filename()
+                notify_success(self.test_name)
+            else:
+                print("[bright_red]Test aborted![/]")
 
     return fully_wrapped_start_test
 

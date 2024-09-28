@@ -6,6 +6,7 @@ from PyQt5.QtCore import (
 )
 
 from instruments.instrument_emulators.abc import AbstractEmulator
+from instruments.instrument_emulators import CameraEmulator
 
 
 class InstrumentError(Exception):

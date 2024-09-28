@@ -1,5 +1,6 @@
 from instruments.instrument_emulators import CommunicationHandler
 from instruments.instrument_wrappers.abc import AbstractInstrument
+import numpy as np
 
 from PyQt5.QtCore import (
     QObject,
@@ -20,7 +21,7 @@ class Camera(QObject, AbstractInstrument):
         self.stop_signal.connect(self._connection.stop)
         self._connection.started.connect(self._started)
 
-    def _q(self, command: str) -> str:
+    def _q(self, command: str) -> str | np.ndarray:
         return self._connection.query(command)
 
     def _w(self, command: str):
@@ -83,6 +84,9 @@ class Camera(QObject, AbstractInstrument):
     def integration_time(self, value):
         self._w(f"IntTime {value}")
 
+    def get_current_frame(self) -> np.ndarray:
+        return self._q("FrameData")
+
     def save_image(self, filename: str):
         pass
 
@@ -96,3 +100,25 @@ class Camera(QObject, AbstractInstrument):
     def _started(self):
         self.started.emit('camera')
 
+
+if __name__ == '__main__':
+    from instruments.instrument_emulators import CameraEmulator
+    from PyQt5.QtWidgets import QApplication
+    import sys
+
+    def print_yes():
+        print('yes')
+
+    app = QApplication(sys.argv)
+
+    camera = Camera()
+    camera.connect(CameraEmulator())
+
+    camera.started.connect(print_yes)
+
+    camera.start()
+
+    image = camera.get_current_frame()
+    print(image)
+
+    pass

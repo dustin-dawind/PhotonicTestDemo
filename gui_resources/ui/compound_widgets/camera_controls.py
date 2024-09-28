@@ -9,13 +9,33 @@ from PyQt5.QtWidgets import (
     QWidget,
     QGridLayout,
     QHBoxLayout,
-    QFrame
+    QFrame,
+    QLabel,
+    QSizePolicy
+)
+from PyQt5.QtCore import (
+    Qt,
 )
 
 
 class CameraControls(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+
+        controls_title = QLabel("Camera Controls")
+        controls_title.setAlignment(Qt.AlignCenter)
+        title_font = controls_title.font()
+        title_font.setPointSize(12)
+        controls_title.setFont(title_font)
+
+        controls_title_box = QFrame()
+        controls_title_box.setFrameShape(QFrame.Box | QFrame.Raised)
+        controls_title_box.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed,)
+        title_box_layout = QHBoxLayout()
+        title_box_layout.setContentsMargins(5, 5, 5, 5)
+
+        controls_title_box.setLayout(title_box_layout)
+        title_box_layout.addWidget(controls_title)
 
         self.min_column_text = UnderlinedLabel(label="Min",
                                                parent=self
@@ -26,7 +46,6 @@ class CameraControls(QWidget):
         self.position_column_text = UnderlinedLabel(label="Current",
                                                     parent=self
                                                     )
-
         self.int_time_controls = MinMaxSliderObject(label="Integration Time (ms):",
                                                     min_value=0.1,
                                                     max_value=10,
@@ -53,12 +72,13 @@ class CameraControls(QWidget):
 
         frame = QFrame()
         frame.setObjectName("CameraControlsBorder")
-        frame.setFrameShape(QFrame.StyledPanel)
-        frame.setStyleSheet("QFrame#CameraControlsBorder"
-                            "{"
-                            "border: 1px solid black;"
-                            "border-radius: 5px;"
-                            "}")
+        frame.setFrameShape(QFrame.Panel | QFrame.Sunken)
+        # frame.setStyleSheet("QFrame#CameraControlsBorder"
+        #                     "{"
+        #                     "border: 1px solid black;"
+        #                     "border-radius: 5px;"
+        #                     "}")
+        # frame.setFrameShadow()
 
         frame_layout = QHBoxLayout()
         frame_layout.addWidget(frame)
@@ -69,6 +89,7 @@ class CameraControls(QWidget):
         frame.setLayout(layout)
 
         # Setting up the layout column by column
+        layout.addWidget(controls_title_box, 0, 0)
         layout.addWidget(self.int_time_controls.label, 1, 0)
         layout.addWidget(self.gain_controls.label, 2, 0)
         layout.addWidget(self.offset_controls.label, 3, 0)
@@ -96,7 +117,6 @@ class CameraControls(QWidget):
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
-
 
     app = QApplication(sys.argv)
 
