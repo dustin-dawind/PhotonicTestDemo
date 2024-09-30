@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
@@ -5,6 +6,9 @@ import numpy as np
 from scipy.stats import linregress
 from rich import print
 import colorcet as cc
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
@@ -15,14 +19,22 @@ from matplotlib.ticker import (
 
 from test_class.test_class import file_timestamp_format
 
+is_frozen = getattr(sys, 'frozen', False)
+if is_frozen:
+    cwd = Path(sys._MEIPASS)
+else:
+    cwd = Path.cwd()
+
+save_dir = cwd / "resources" / "analysis_results"
+
+
 colormap = cc.glasbey_dark
-save_dir = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\analysis_results")
 
 
 def liv_analysis(data_path: Path,
                  analysis_flags: dict[str, bool],
                  analysis_groupings: dict[str, bool]
-                 ):
+                 ) -> Path:
     df = pd.read_csv(data_path)
 
     analyze_by = [k for k in analysis_groupings.keys() if analysis_groupings[k] is True] + ["Set Current (mA)"]
@@ -33,12 +45,12 @@ def liv_analysis(data_path: Path,
 
     title = generate_title(data_path)
 
-    plot_mean_livs(mean_df,
-                   analysis_flags=analysis_flags,
-                   analysis_groupings=analysis_groupings,
-                   title=title,
-                   filename=get_filename(data_path)
-                   )
+    return plot_mean_livs(mean_df,
+                          analysis_flags=analysis_flags,
+                          analysis_groupings=analysis_groupings,
+                          title=title,
+                          filename=get_filename(data_path)
+                          )
 
 
 def generate_title(data_path: Path):
@@ -51,15 +63,16 @@ def generate_title(data_path: Path):
 
 
 def get_filename(data_path: Path):
-    return data_path.name
+    return data_path.parents[1] / "analysis_results" / data_path.name.split(".")[0]
+
 
 
 def plot_mean_livs(df: pd.DataFrame,
                    analysis_flags: dict[str, bool],
                    analysis_groupings: dict[str, bool],
                    title: str = None,
-                   filename: str = None
-                   ):
+                   filename: Path | str = None
+                   ) -> Path:
     analysis_groupings = [k for k in analysis_groupings.keys() if analysis_groupings[k] is True]
 
     if len(analysis_groupings) > 0:
@@ -238,9 +251,10 @@ def plot_mean_livs(df: pd.DataFrame,
                    handlelength=1,
                    fontsize=12
                    )
-    fig.savefig(save_dir / f"{filename}.png")
-    print("[bright_magenta]Figure saved as:[/]", f"[bright_green]{save_dir / filename}.png[/]")
-    plt.show()
+    full_filename = save_dir / f"{filename}.png"
+    fig.savefig(full_filename)
+    print("[bright_magenta]Figure saved as:[/]", f"[bright_green]{full_filename}[/]")
+    return full_filename
 
 
 def format_threshold_plot(ax: plt.Axes,
@@ -329,8 +343,12 @@ def norm_y_ticks_w_uncertainties(ax: plt.Axes,
 
 
 if __name__ == '__main__':
-    # path = Path(r"C:\Users\Matt\PycharmProjects\Quintessent Presentation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
-    path = Path(r"C:\Users\mlarkins\Local Data\Programming\Automation\resources\test_results\W1234_F1-10_D1-10_20240926-183603.csv")
+    is_frozen = getattr(sys, 'frozen', False)
+    if is_frozen:
+        cwd = Path(sys._MEIPASS)
+    else:
+        cwd = Path.cwd()
+    path = cwd / "resources" / "test_results" / "W1234_F1-10_D1-10_20240926-183603.csv"
 
     liv_analysis(path,
                  analysis_flags={"threshold": True, "slope_efficiency": True},

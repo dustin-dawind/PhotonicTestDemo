@@ -132,7 +132,7 @@ class DataPlotter(DataPlotterUI):
 
         match len(y_title):
             case 1:
-                y1_title = str(y_title)
+                y1_title = str(y_title[0])
                 y1_units = self._get_title_units(y1_title)
                 y1_title_w_units = y_title if y1_units is None else f"{y1_title} ({y1_units})"
                 y2_title = None
@@ -152,7 +152,7 @@ class DataPlotter(DataPlotterUI):
         if y2_title is None:
             self.y2_view.hide()
             zip_iter = zip(['bottom', 'left'],
-                           [x_title, y1_title]
+                           [x_title_w_units, y1_title_w_units]
                            )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
                                                              width=1
@@ -166,7 +166,7 @@ class DataPlotter(DataPlotterUI):
                            [x_title_w_units, y1_title_w_units, y2_title_w_units],
                            )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
-                                                             width=1
+                                                             width=1,
                                                              )
                                                 ),
                                 name=y1_title
@@ -179,13 +179,19 @@ class DataPlotter(DataPlotterUI):
                                 name=y2_title
                                 )
 
-        label_style = {'font-size': '11pt'}
+        label_style = {'font-size': '12pt'}
         for axis, name in zip_iter:
             axis = self.plotItem.getAxis(axis)
             axis.enableAutoSIPrefix(False)
             axis.setLabel(text=name,
                           **label_style
                           )
+
+        legend_label_stle = {'size': '12pt'}
+        for item in self.legend.items:
+            for single_item in item:
+                if isinstance(single_item, pg.LabelItem):
+                    single_item.setText(single_item.text, **legend_label_stle)
 
     def change_active_data_series(self, device_info: pd.Series):
         if device_info["Device ID"] + (device_info["Field ID"] * 100) not in self.all_data_series:
@@ -217,6 +223,7 @@ class DataPlotter(DataPlotterUI):
         if device_info["Device ID"] + (device_info["Field ID"] * 100) != self.active_data_series:
             self.change_active_data_series(device_info)
         self.all_data_series[self.active_data_series].append(x, *y)
+        self.plotItem.vb.autoRange()
 
         if not self.legend.isVisible():
             self.legend.show()

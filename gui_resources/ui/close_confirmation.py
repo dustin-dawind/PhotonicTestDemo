@@ -13,6 +13,11 @@ class CloseConfirmation(QMessageBox):
                          parent=parent,
                          **kwargs
                          )
+        font = self.font()
+        font.setPointSize(14)
+        self.setFont(font)
 
         self.setEscapeButton(QMessageBox.No)
         self.setDefaultButton(QMessageBox.No)
+
+

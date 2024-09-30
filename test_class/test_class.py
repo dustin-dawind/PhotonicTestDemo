@@ -1,3 +1,4 @@
+import sys
 import time
 from datetime import datetime
 import functools
@@ -24,6 +25,15 @@ from PyQt5.QtCore import (
 
 
 file_timestamp_format = "%Y%m%d-%H%M%S"
+
+
+is_frozen = getattr(sys, 'frozen', False)
+if is_frozen:
+    cwd = Path(sys._MEIPASS)
+else:
+    cwd = Path.cwd()
+
+save_directory = Path(cwd / "resources" / "test_results")
 
 
 class TestClass(QObject):
@@ -56,9 +66,6 @@ class TestClass(QObject):
         self.data = defaultdict(list)
 
         self.filename = None
-        self.save_directory = Path(Path.cwd() / "resources" / "test_results")
-
-
 
     @pyqtSlot()
     def request_stop(self):
@@ -144,7 +151,7 @@ class TestClass(QObject):
             devices = f"D{devices[0]}"
         filename = f"{wafers}_{fields}_{devices}"
 
-        full_filepath = self.save_directory / f'{filename}_{datetime.now().strftime(file_timestamp_format)}.csv'
+        full_filepath = save_directory / f'{self.test_name}_{filename}_{datetime.now().strftime(file_timestamp_format)}.csv'
         output = pd.DataFrame.from_dict(self.data)
         output.to_csv(full_filepath, index=False)
         print(f"\n[bright_magenta]Results saved to[/] [bright_green]'{full_filepath}'[/]")
@@ -159,7 +166,7 @@ class TestClass(QObject):
                                    show_header=False,
                                    show_lines=True
                                    )
-            test_analytics.add_row("[bright_cyan]Avg. time per measurement: [/]",
+            test_analytics.add_row("[bright_cyan]Avg. time per device: [/]",
                                    f"[bright_yellow]{mean * 1000:0.0f} ms[/]")
             test_analytics.add_row("[bright_cyan]Total testing time: [/]",
                                    f"[bright_yellow]{total :0.2f} s[/]")

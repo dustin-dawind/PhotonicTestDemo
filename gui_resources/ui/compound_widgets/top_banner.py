@@ -22,7 +22,7 @@ class TopBannerUI(QWidget):
         self.setLayout(layout)
 
         font = self.font()
-        font.setPointSize(11)
+        font.setPointSize(14)
         self.setFont(font)
 
         self.test_script_selector = FileSelectorObject(parent=self,

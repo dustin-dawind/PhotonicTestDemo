@@ -1,5 +1,5 @@
-from analysisfromtoml.analysis_from_toml import launch_cmd
+from analysisfromtoml.analysis_from_toml import Analysis
 
 __all__ = [
-    "launch_cmd",
+    "Analysis",
 ]

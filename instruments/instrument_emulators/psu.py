@@ -16,16 +16,19 @@ from PyQt5.QtCore import (
 
 
 class PSUEmulator(QObject, AbstractEmulator):
-    output_changed = pyqtSignal(str)
-    i_set_changed = pyqtSignal(float)
+    output_changed_signal = pyqtSignal(str)
     i_current_changed = pyqtSignal(float)
+    v_current_changed = pyqtSignal(float)
+
     request_voltage = pyqtSignal()
+    # request_current = pyqtSignal(float)
 
     located_at = "COM10"
     settings = {"Output"       : Setting("OFF"),
                 "ICurrent"     : Setting("0", readonly=True),
                 "VCurrent"     : Setting("0", readonly=True),
                 "ILim"         : Setting("0"),
+                "VSet"         : Setting("0"),
                 "VLim"         : Setting("OFF"),
                 "ISet"         : Setting("0"),
                 "*IDN?"        : Setting("Matthew Larkins, Emulated PSU v1.0, 11223344", readonly=True),
@@ -44,6 +47,9 @@ class PSUEmulator(QObject, AbstractEmulator):
 
         self._i_set = 0
         self._output = "OFF"
+        self._v_set = 0
+
+        self._v_source = False
 
         self._poll_settings_timer = QTimer(self)
         self._poll_settings_timer.setInterval(self._timer_interval)
@@ -99,25 +105,42 @@ class PSUEmulator(QObject, AbstractEmulator):
         self.settings_mutex.lockForRead()
         output = self.settings["Output"].value
         i_set = float(self.settings["ISet"].value)
+        v_set = float(self.settings["VSet"].value)
+        i_lim = float(self.settings["ILim"].value)
         self.settings_mutex.unlock()
 
+        if v_set != self._v_set:
+            self._v_source = True
+            self._v_set = v_set
+        if i_set != self._i_set:
+            self._v_source = False
+            self._i_set = i_set
         if output_changed := (output != self._output):
             self._output = output
-            self.output_changed.emit(output)
+            self.output_changed_signal.emit(output)
 
+        i_current = 0
+        v_current = 0
         if output == "ON":
-            i_current = i_set + np.random.normal(0, 1)
-        else:
-            i_current = 0
-
-        self.i_current_changed.emit(i_current)
-        self.request_voltage.emit()
+            if not self._v_source:
+                i_current = i_set + np.random.normal(0, 1)
+                self.i_current_changed.emit(i_current)
+                self.request_voltage.emit()
+            else:
+                v_current = np.random.normal(v_set, 1e-6)
+                self.v_current_changed.emit(v_current)
+                # self.request_current.emit()
 
         self.settings_mutex.lockForWrite()
-        self.settings["ICurrent"].value = str(i_current)
+        if not self._v_source:
+            self.settings["ICurrent"].value = str(i_current)
+        else:
+            self.settings["VCurrent"].value = str(v_current)
         if output_changed:
             self.settings["Output"].value = output
-        if i_set != self._i_set:
+        if i_set > i_lim:
+            self.settings["ISet"].value = str(i_lim)
+        elif i_set != self._i_set:
             self.settings["ISet"].value = str(i_set)
         self.settings_mutex.unlock()
 
@@ -125,5 +148,14 @@ class PSUEmulator(QObject, AbstractEmulator):
     def update_voltage(self, value: float):
         self.settings_mutex.lockForWrite()
         self.settings["VCurrent"].value = str(value)
+        self.settings_mutex.unlock()
+
+    @pyqtSlot(float)
+    def update_current(self, value: float):
+        self.settings_mutex.lockForWrite()
+        i_lim = float(self.settings["ILim"].value)
+        if value > i_lim:
+            value = i_lim
+        self.settings["ICurrent"].value = str(value)
         self.settings_mutex.unlock()
 

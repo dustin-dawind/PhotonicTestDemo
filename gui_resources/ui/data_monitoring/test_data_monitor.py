@@ -57,6 +57,8 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                  ):
         super().__init__(parent)
 
+        self.setMinimumSize(1000, 600)
+
         self.test_module: ModuleType | None = None
         self.test_class = None
         self._test_thread = None
@@ -71,7 +73,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                             'camera'     : instruments.camera
                             }
 
-        self.controls.start_btn.clicked.connect(self.load_device_definitions)
+        # self.controls.start_btn.clicked.connect(self.load_device_definitions)
         self.controls.start_btn.clicked.connect(self.load_test_script)
         self.controls.start_btn.clicked.connect(self.plotter.clear_plot)
 
@@ -103,18 +105,20 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
         error_popup.exec_()
         self.controls.start_stop.toggle_enabled_button()
 
-    @pyqtSlot()
     def load_device_definitions(self):
         path = self.controls.device_definition_selector.file_path_display.text()
         if path != '':
             path = Path(path)
             self.device_definitions = pd.read_csv(path)
 
+        return path
+
     @pyqtSlot()
     def load_test_script(self):
-        path = self.controls.test_script_selector.file_path_display.text()
-        if path != '':
-            path = Path(path)
+        test_script_path = self.controls.test_script_selector.file_path_display.text()
+        device_definitions_path = self.load_device_definitions()
+        if test_script_path != '' and device_definitions_path != '':
+            path = Path(test_script_path)
             try:
                 test_spec = importlib.util.spec_from_file_location(path.name.split(".")[0], path)
                 self.test_module = importlib.util.module_from_spec(test_spec)
@@ -200,6 +204,8 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
 
     @pyqtSlot(object)
     def start_instruments(self, instruments: tuple[str, ...]):
+        if not isinstance(instruments, tuple):
+            raise TypeError(f"The 'needed_instruments' attribute must be a tuple. Offending test class: {self.test_class.test_name}")
         for instrument in instruments:
             self.instruments[instrument].start()
 

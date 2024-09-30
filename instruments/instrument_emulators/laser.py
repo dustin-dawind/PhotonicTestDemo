@@ -17,18 +17,19 @@ class CharacteristicParameters:
     threshold: float = 100
     ase_multiplier: float = 70
     slope_eff: float = 0.8
-    i_rev_sat: float = 10
+    i_rev_sat_denom: float = 10
 
     def randomize(self):
         self.threshold = np.random.uniform(50, 150)
         self.ase_multiplier = np.random.uniform(60, 80)
         self.slope_eff = np.random.uniform(0.6, 0.8)
-        self.i_rev_sat = np.random.uniform(8, 20)
+        self.i_rev_sat_denom = np.random.uniform(8, 20)
 
 
 class LaserEmulator(QObject):
     power_value_ready = pyqtSignal(float)
     voltage_value_ready = pyqtSignal(float)
+    current_value_ready = pyqtSignal(float)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,10 +42,11 @@ class LaserEmulator(QObject):
         self._threshold = self._base_parameters.threshold
         self._ase_multiplier = self._base_parameters.ase_multiplier
         self._slope_eff = self._base_parameters.slope_eff
-        self.i_rev_sat = self._base_parameters.i_rev_sat
+        self.i_rev_sat = 1e-14 / self._base_parameters.i_rev_sat_denom
         # --------------------------------------------------------
 
         self._i_current = 0
+        self._v_current = 0
         self._psu_on = False
 
         self._previous_device = pd.Series(index=["Wafer ID", "Field ID", "Device ID"])
@@ -76,6 +78,12 @@ class LaserEmulator(QObject):
         else:
             return 0
 
+    def _f_i_from_v(self, input_voltage):
+        if self._psu_on:
+            return self.i_rev_sat * (np.exp(input_voltage / self.exp_denom) - 1)  # Shockley diode equation
+        else:
+            return 0
+
     @pyqtSlot(float)
     def update_power(self, input_current):
         self._i_current = input_current
@@ -88,6 +96,13 @@ class LaserEmulator(QObject):
         voltage = self._f_v_from_i(self._i_current)
         self.voltage_value_ready.emit(voltage)
         return voltage
+
+    @pyqtSlot(float)
+    def update_current(self, input_voltage):
+        self._v_current = input_voltage
+        current = self._f_i_from_v(self._v_current)
+        self.current_value_ready.emit(current)
+        return current
 
     @pyqtSlot(str)
     def psu_status_changed(self, status: bool):
@@ -110,10 +125,9 @@ class LaserEmulator(QObject):
         self._threshold = np.random.normal(self._base_parameters.threshold, 5)
         self._ase_multiplier = np.random.normal(self._base_parameters.ase_multiplier, 5)
         self._slope_eff = np.random.normal(self._base_parameters.slope_eff, 0.01)
-        # print("slope_eff", self._slope_eff)
 
         # RevIV parameters
         self._non_ideal_factor = np.random.normal(self._base_parameters.non_ideal_factor, 0.025)
         self.exp_denom = self._base_parameters.v_th * self._non_ideal_factor
 
-        self.i_rev_sat = 1e-14 / np.random.normal(self._base_parameters.i_rev_sat, 1)
+        self.i_rev_sat = 1e-14 / np.random.normal(self._base_parameters.i_rev_sat_denom, 1)

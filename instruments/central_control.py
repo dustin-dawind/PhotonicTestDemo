@@ -37,11 +37,14 @@ class InstrumentRegistry(QObject):
         self.psu = drivers.PSU(parent=self)
         self.psu.connect(self.psu_emulator)
 
-        self.psu_emulator.output_changed.connect(self.laser_emulator.psu_status_changed)
+        self.psu_emulator.output_changed_signal.connect(self.laser_emulator.psu_status_changed)
         self.psu_emulator.i_current_changed.connect(self.laser_emulator.update_power)
+        self.psu_emulator.v_current_changed.connect(self.laser_emulator.update_current)
+        # self.psu_emulator.request_current.connect(self.laser_emulator.update_current)
         self.psu_emulator.request_voltage.connect(self.laser_emulator.update_voltage)
 
         self.laser_emulator.voltage_value_ready.connect(self.psu_emulator.update_voltage)
+        self.laser_emulator.current_value_ready.connect(self.psu_emulator.update_current)
         self.laser_emulator.power_value_ready.connect(self.power_meter_emulator.base_power_changed)
 
     def stop_threads(self):

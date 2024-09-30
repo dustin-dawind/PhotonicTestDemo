@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from test_class import (
@@ -7,75 +8,59 @@ from test_class import (
 
 # Can only use these for type hinting => need instruments to be the original instance in order to synchronize everything
 from instruments import (
-    PSU,
-    PowerMeter
+    PSU
 )
 
-
 class Test(TestClass):
-    def __init__(self, device_definitions: pd.DataFrame):
-        super().__init__("CW_LIV")
+    def __init__(self,
+                 device_definitions: pd.DataFrame
+                 ):
+        super().__init__("Reverse_IV")
 
         # The test_data_monitor will handle creating instance attributes for these instruments.
         # They may be referenced as `self.power_meter` and `self.psu` within `self.start_test()`
-        self.needed_instruments: list | tuple = ('power_meter', 'psu')
-        self.power_meter: PowerMeter | None = None
+        self.needed_instruments: tuple = ('psu',)  # Must be a tuple
         self.psu: PSU | None = None
         self.DUTs = device_definitions
 
-
     @standard_test
     def run_test(self):
-        self.set_plot_axes_titles('Current',
-                                  'Power',
-                                  'Efficiency'
+        self.set_plot_axes_titles('Voltage',
+                                  'Current'
                                   )
 
-        test_setpoints = list(range(0, 1201, 50))
-
-        self.psu.i_lim = test_setpoints[-1]
+        self.psu.i_lim = 100e-3  # 1uA
         self.psu.output = 'ON'
 
+        test_setpoints = list(np.linspace(-2., -0.5, 10)) + list(np.linspace(-0.5, 1.5, 40)) + list(np.linspace(1.5, 2., 5))
         self.send_total_num_data_points(len(test_setpoints) * len(self.DUTs.index))
         for index, row in self.DUTs.iterrows():
             self.new_device(row)
 
             for setpoint in test_setpoints:
-                self.psu.i_setpoint = setpoint
+                self.psu.v_setpoint = setpoint
 
-                i_set = self.psu.i_setpoint
-                i_actual = self.psu.measure_current()
+                v_set = self.psu.v_setpoint
                 v_actual = self.psu.measure_voltage()
-                power = self.power_meter.measure()
-
-                eff = 0
-                if (e_power := i_actual * v_actual) != 0:
-                    eff = power / e_power
-                if eff > 1 or eff < 0 or power < 10:
-                    eff = 0
+                i_actual = self.psu.measure_current()
 
                 # This breaks if there is ever more than 256 devices to test, as the colormap only has 256 colors.
                 # Can be fixed by reducing each device set to its mean plot after when a new device set is started
                 # (i.e. when the wafer or field ID changes)
                 self.send_for_plotting(row,
-                                       i_actual,
-                                       power,
-                                       eff
+                                       v_actual,
+                                       i_actual
                                        )
 
                 self.data["Wafer ID"].append(row["Wafer ID"])
                 self.data["Field ID"].append(row["Field ID"])
                 self.data["Device ID"].append(row["Device ID"])
-                self.data["Set Current (mA)"].append(i_set)
-                self.data["Measured Current (mA)"].append(i_actual)
-                self.data["Measured Voltage (V)"].append(v_actual)
-                self.data["Measured Power (mW)"].append(power)
-                self.data["Efficiency"].append(eff)
+                self.data["Set Voltage (V)"].append(v_set)
+                self.data["Measured Voltage (v)"].append(v_actual)
+                self.data["Measured Current (uA)"].append(i_actual * 1e3)
 
                 self.update_test_progress()
                 if self.user_requested_stop:
                     self.psu.output = 'OFF'
                     self.test_finished()
                     return
-
-

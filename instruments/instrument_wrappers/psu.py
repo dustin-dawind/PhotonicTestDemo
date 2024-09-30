@@ -86,6 +86,14 @@ class PSU(QObject, AbstractInstrument):
     def i_setpoint(self, value):
         self._w(f"ISet {value}")
 
+    @property
+    def v_setpoint(self):
+        return float(self._q("VSet"))
+
+    @v_setpoint.setter
+    def v_setpoint(self, value):
+        self._w(f"VSet {value}")
+
     def measure_current(self):
         return float(self._q("ICurrent"))
 
