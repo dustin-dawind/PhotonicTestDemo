@@ -230,6 +230,10 @@ class Analysis(QObject):
             console.print("\n\n[bright_green]LIV analysis complete.[/]")
             self.figure_saved.emit(plot_path)
 
+        if self.analysis_config["input_dir_paths"]["rev_iv"] != '':
+            console.print("\n\n[red]Rev IV analysis not implemented.[/]")
+
+
 class InputVerifier(QObject):
     response_received = pyqtSignal(str)
 

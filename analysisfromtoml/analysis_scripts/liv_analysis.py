@@ -251,6 +251,7 @@ def plot_mean_livs(df: pd.DataFrame,
                    fontsize=12
                    )
     full_filename = save_dir / f"{filename}.png"
+    Path.mkdir(save_dir, exist_ok=True)
     fig.savefig(full_filename)
     print("[bright_magenta]Figure saved as:[/]", f"[bright_green]{full_filename}[/]")
     return full_filename
@@ -347,9 +348,9 @@ if __name__ == '__main__':
         cwd = Path(sys._MEIPASS)
     else:
         cwd = Path.cwd()
-    path = cwd / "resources" / "test_results" / "W1234_F1-10_D1-10_20240926-183603.csv"
+    test_path = cwd / "resources" / "test_results" / "W1234_F1-10_D1-10_20240926-183603.csv"
 
-    liv_analysis(path,
+    liv_analysis(test_path,
                  analysis_flags={"threshold": True, "slope_efficiency": True},
                  analysis_groupings={"Wafer ID": False, "Field ID": True}
                  )
