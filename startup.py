@@ -34,4 +34,4 @@ app.setWindowIcon(QIcon(str(cwd / "resources\\logo.jpg")))
 window = MainWindow()
 window.show()
 
-sys.exit(app.exec_())
+sys.exit(app.exec())
