@@ -7,7 +7,7 @@ from instruments.instrument_emulators.abc import (
     AbstractEmulator
 )
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QObject,
     QReadWriteLock,
     pyqtSignal,
@@ -166,7 +166,7 @@ class CameraEmulator(QObject, AbstractEmulator):
 
 if __name__ == "__main__":
     import sys
-    from PyQt5.QtWidgets import (
+    from PyQt6.QtWidgets import (
         QApplication
     )
 

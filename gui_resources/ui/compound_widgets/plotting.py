@@ -2,7 +2,7 @@ import numpy as np
 import colorcet as cc
 import pandas as pd
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     Qt,
     pyqtSlot,
 )
@@ -20,7 +20,7 @@ class DataSeries:
                                          )
         self.y2_series = pg.PlotDataItem(pen=pg.mkPen(color=color,
                                                       width=1,
-                                                      style=Qt.DashLine
+                                                      style=Qt.PenStyle.DashLine
                                                       )
                                          )
 
@@ -90,14 +90,20 @@ class DataPlotter(DataPlotterUI):
 
         self.plotItem.vb.sigResized.connect(self._update_views)
 
+    @staticmethod
+    def get_device_id(device_info):
+        return device_info["Device ID"] + (device_info["Field ID"] * 100)
+
     @pyqtSlot(int)
     def add_series(self, device_info: pd.Series):
-        if (id_num := device_info["Device ID"] + (device_info["Field ID"] * 100)) in self.all_data_series:
+        dev_id = self.get_device_id(device_info)
+
+        if dev_id in self.all_data_series:
             return
         else:
-            self.active_data_series = id_num
+            self.active_data_series = dev_id
             new_series = DataSeries(color=self.colormap[device_info["Field ID"]])
-            self.all_data_series[id_num] = new_series
+            self.all_data_series[dev_id] = new_series
 
             self.addItem(new_series.y1_series)
             self.y2_view.addItem(new_series.y2_series)
@@ -130,14 +136,19 @@ class DataPlotter(DataPlotterUI):
         x_units = self._get_title_units(x_title)
         x_title_w_units = x_title if x_units is None else f"{x_title} ({x_units})"
 
+        y1_title = None
+        y1_units = None
+        y1_title_w_units = None
+        y2_title = None
+        y2_units = None
+        y2_title_w_units = None
+
         match len(y_title):
             case 1:
                 y1_title = str(y_title[0])
                 y1_units = self._get_title_units(y1_title)
                 y1_title_w_units = y_title if y1_units is None else f"{y1_title} ({y1_units})"
-                y2_title = None
-                y2_units = None
-                y2_title_w_units = None
+
             case 2:
                 self.plotItem.showAxis('right')
                 y1_title = y_title[0]
@@ -173,7 +184,7 @@ class DataPlotter(DataPlotterUI):
                                 )
             self.legend.addItem(pg.PlotDataItem(pen=pg.mkPen(color='k',
                                                              width=1,
-                                                             style=Qt.DashLine
+                                                             style=Qt.PenStyle.DashLine
                                                              )
                                                 ),
                                 name=y2_title
@@ -194,10 +205,12 @@ class DataPlotter(DataPlotterUI):
                     single_item.setText(single_item.text, **legend_label_stle)
 
     def change_active_data_series(self, device_info: pd.Series):
-        if device_info["Device ID"] + (device_info["Field ID"] * 100) not in self.all_data_series:
+        dev_id = self.get_device_id(device_info)
+
+        if dev_id not in self.all_data_series:
             self.add_series(device_info)
         else:
-            self.active_data_series = device_info["Device ID"] + (device_info["Field ID"] * 100)
+            self.active_data_series = dev_id
 
     @pyqtSlot(bool)
     def hide_y1(self, state: bool):
@@ -219,10 +232,13 @@ class DataPlotter(DataPlotterUI):
 
     @pyqtSlot(pd.Series, float, float)
     @pyqtSlot(pd.Series, float, float, float)
-    def append_data(self, device_info: pd.Series, x: float, *y: float):
-        if device_info["Device ID"] + (device_info["Field ID"] * 100) != self.active_data_series:
+    def append_data(self, device_info: pd.Series, x: float, *y: float | tuple[float, float]):
+        if self.get_device_id(device_info) != self.active_data_series:
             self.change_active_data_series(device_info)
-        self.all_data_series[self.active_data_series].append(x, *y)
+        try:
+            self.all_data_series[self.active_data_series].append(x, *y)
+        except KeyError as e:
+            raise ValueError(f"Device ID {self.active_data_series} not found in all_data_series") from e
         self.plotItem.vb.autoRange()
 
         if not self.legend.isVisible():

@@ -1,6 +1,6 @@
 import numpy as np
 import rich
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     pyqtSlot,
     QThread,
     pyqtSignal
@@ -11,7 +11,7 @@ from gui_resources.ui.compound_widgets.base_widgets import (
     BeamHistogramPlot,
     BeamImageDisplay
 )
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -104,7 +104,7 @@ class AllCameraPlots(QWidget):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

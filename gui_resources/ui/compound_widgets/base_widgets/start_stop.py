@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QPushButton,
@@ -18,11 +18,11 @@ class StartStopUI(QWidget):
         self.setLayout(layout)
 
         self.start_btn = QPushButton(start_text)
-        self.start_btn.setSizePolicy(QSizePolicy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
+        self.start_btn.setSizePolicy(QSizePolicy.Policy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
         self.start_btn.setContentsMargins(5, 2, 5, 2)
 
         self.stop_btn = QPushButton(stop_text)
-        self.stop_btn.setSizePolicy(QSizePolicy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
+        self.stop_btn.setSizePolicy(QSizePolicy.Policy.Maximum, self.start_btn.sizePolicy().verticalPolicy())
         self.stop_btn.setContentsMargins(5, 2, 2, 2)
         self.stop_btn.setEnabled(False)
 
@@ -55,11 +55,11 @@ class StartStop(StartStopUI):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
 
     window = StartStop()
     window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

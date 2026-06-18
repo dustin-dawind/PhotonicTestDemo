@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 
 
 class CloseConfirmation(QMessageBox):
@@ -6,10 +6,10 @@ class CloseConfirmation(QMessageBox):
                  parent=None,
                  **kwargs
                  ):
-        super().__init__(QMessageBox.Question,
+        super().__init__(QMessageBox.Icon.Question,
                          "Automation Examples",
                          "Are you sure you want to quit?",
-                         QMessageBox.Yes | QMessageBox.No,
+                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                          parent=parent,
                          **kwargs
                          )
@@ -17,7 +17,17 @@ class CloseConfirmation(QMessageBox):
         font.setPointSize(14)
         self.setFont(font)
 
-        self.setEscapeButton(QMessageBox.No)
-        self.setDefaultButton(QMessageBox.No)
+        self.setEscapeButton(QMessageBox.StandardButton.No)
+        self.setDefaultButton(QMessageBox.StandardButton.No)
+
+
+if __name__ == "__main__":
+    import sys
+    from PyQt6.QtWidgets import QApplication
+
+    app = QApplication(sys.argv)
+    window = CloseConfirmation()
+    window.show()
+    sys.exit(app.exec())
 
 

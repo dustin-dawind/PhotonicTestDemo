@@ -2,7 +2,7 @@ from instruments.instrument_emulators import CommunicationHandler
 from instruments.instrument_wrappers.abc import AbstractInstrument
 import numpy as np
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QObject,
     pyqtSignal,
     pyqtSlot
@@ -103,7 +103,7 @@ class Camera(QObject, AbstractInstrument):
 
 if __name__ == '__main__':
     from instruments.instrument_emulators import CameraEmulator
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
 
     def print_yes():

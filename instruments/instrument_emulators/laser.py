@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QObject,
     pyqtSignal,
     pyqtSlot,

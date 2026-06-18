@@ -15,8 +15,8 @@ from email_notifier import (
     notify_error
 )
 
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import (
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import (
     pyqtSignal,
     QObject,
     pyqtSlot,

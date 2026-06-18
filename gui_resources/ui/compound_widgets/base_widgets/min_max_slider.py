@@ -1,11 +1,11 @@
 from gui_resources.ui.compound_widgets import utils
 from gui_resources.ui.compound_widgets.base_widgets.float_slider import FloatSlider
 from rich import print
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QLineEdit,
     QLabel
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     pyqtSlot,
     QObject,
     Qt

@@ -7,14 +7,14 @@ from gui_resources.ui.compound_widgets import (
     AllCameraPlots
 )
 from instruments.instrument_emulators import CameraEmulator
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QSizePolicy,
     QFrame
     )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QTimer,
     pyqtSlot,
     pyqtSignal,
@@ -181,7 +181,7 @@ class BeamImagingMonitor(BeamImagingMonitorUI):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

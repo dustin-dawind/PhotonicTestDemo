@@ -3,7 +3,7 @@ from abc import (
     ABCMeta,
     abstractmethod
 )
-from PyQt5.QtCore import QObject
+from PyQt6.QtCore import QObject
 import numpy as np
 
 

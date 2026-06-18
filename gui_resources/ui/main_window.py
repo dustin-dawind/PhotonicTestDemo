@@ -8,11 +8,11 @@ from .data_monitoring import (
 from PIL import Image
 from pathlib import Path
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QEvent,
     QThread, pyqtSlot
 )
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QPushButton,
@@ -69,7 +69,7 @@ class MainWindow(MainWindowUI):
         self.analysis_thread = None
     def closeEvent(self, e: QEvent):
         confirmation = CloseConfirmation(parent=self)
-        if confirmation.exec_() == QMessageBox.Yes:
+        if confirmation.exec() == QMessageBox.StandardButton.Yes:
             self.instruments.stop_threads()
             e.accept()
             QApplication.exit()

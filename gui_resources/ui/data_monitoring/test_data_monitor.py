@@ -10,14 +10,14 @@ from gui_resources.ui.compound_widgets import (
     TopBanner,
     DataPlotter
 )
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
     QVBoxLayout,
     QFrame,
     QMessageBox
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     pyqtSlot,
     QEvent,
     QThread,
@@ -40,7 +40,7 @@ class LiveTestDataMonitorUI(QWidget):
         self.plotter = DataPlotter(parent=self)
 
         h_divider = QFrame(parent=self)
-        h_divider.setFrameShape(QFrame.HLine | QFrame.Sunken)
+        h_divider.setFrameStyle(QFrame.Shape.HLine | QFrame.Shadow.Sunken)
 
         layout.addWidget(self.controls)
         layout.addWidget(h_divider)
@@ -132,8 +132,7 @@ class LiveTestDataMonitor(LiveTestDataMonitorUI):
                 except AttributeError:
                     self.open_warning_popup("Could not find Test class in test script. Please check the script and try again.")
                 else:
-                    self.test_class = TestClass(device_definitions=self.device_definitions
-                                                )
+                    self.test_class = TestClass(device_definitions=self.device_definitions)
 
                     for instrument in self.test_class.needed_instruments:
                         setattr(self.test_class, instrument, self.instruments[instrument])

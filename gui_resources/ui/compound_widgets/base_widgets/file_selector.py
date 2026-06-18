@@ -2,14 +2,14 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QWidget,
     QPushButton,
     QFileDialog,
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     Qt,
     pyqtSignal
 )
@@ -38,7 +38,7 @@ class FileSelectorUINoLayout(QWidget):
         # self.setLayout(layout)
 
         self.label = QLabel(f"<u>{label_base} Path</u>:")
-        self.label.setAlignment(Qt.AlignRight)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignRight)
 
         self.file_path_display = QLineEdit()
         self.file_path_display.setReadOnly(True)
@@ -78,18 +78,19 @@ class FileSelectorObject(FileSelectorUINoLayout):
                                                   caption=f"Select {self.label_base} File",
                                                   directory=PATH_TO_TEST_SCRIPTS,
                                                   filter=self._file_filter,
-                                                  options=QFileDialog.HideNameFilterDetails | QFileDialog.ReadOnly
+                                                  options=QFileDialog.Option.HideNameFilterDetails |
+                                                          QFileDialog.Option.ReadOnly
                                                   )
         self.file_path_display.setText(filepath)
         self.selected_file_changed.emit()
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
 
     window = FileSelectorObject("Test")
     window.show()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

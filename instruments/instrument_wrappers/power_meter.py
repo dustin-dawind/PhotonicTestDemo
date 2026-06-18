@@ -1,7 +1,7 @@
 from instruments.instrument_emulators import CommunicationHandler
 from instruments.instrument_wrappers.abc import AbstractInstrument
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QObject,
     pyqtSignal,
     pyqtSlot

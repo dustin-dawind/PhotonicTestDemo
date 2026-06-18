@@ -5,7 +5,7 @@ from instruments.instrument_emulators.abc import (
     Setting,
     AbstractEmulator
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     pyqtSignal,
     pyqtSlot,
     QTimer,

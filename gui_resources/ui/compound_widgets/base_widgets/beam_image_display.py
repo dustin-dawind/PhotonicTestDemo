@@ -1,9 +1,9 @@
 import numpy as np
-from PyQt5.QtGui import (
+from PyQt6.QtGui import (
     QColor,
     QPen
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     pyqtSlot,
     Qt,
     QPointF
@@ -121,7 +121,7 @@ class BeamImageDisplay(BeamImageDisplayUI):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

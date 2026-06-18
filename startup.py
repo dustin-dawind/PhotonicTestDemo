@@ -6,11 +6,11 @@ from pathlib import Path
 # matplotlib lists pyside6 as one of its dependencies, and as such is installed with matplotlib automatically. This
 # means that the environment has both PyQt5 and PySide6 installed. pyqtgraph tries to auto-detect which package to use,
 # and tries PySide6 first, so we need to explicitly tell it to use PyQt5
-os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
+os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt6'
 
 from gui_resources import MainWindow
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QIcon
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QIcon
 
 try:
     import pyi_splash

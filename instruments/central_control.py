@@ -7,7 +7,7 @@ from instruments.instrument_emulators import (
     LaserEmulator
 )
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QThread,
     QObject
 )

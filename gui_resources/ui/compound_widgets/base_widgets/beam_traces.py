@@ -1,7 +1,7 @@
 import numpy as np
 import pyqtgraph as pg
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QRectF,
     QEvent,
     pyqtSlot,
@@ -95,7 +95,7 @@ class BeamTraceViewer(BeamTraceViewerUI):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)

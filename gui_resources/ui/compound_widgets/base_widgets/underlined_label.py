@@ -1,11 +1,11 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QLabel,
     QFrame,
     QSizePolicy
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     Qt
 )
 
@@ -28,7 +28,7 @@ class UnderlinedLabel(QWidget):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
 
 

@@ -3,12 +3,12 @@ from gui_resources.ui.compound_widgets.base_widgets import (
     FileSelectorObject,
     )
 
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QWidget,
     QGridLayout,
     QProgressBar
 )
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     Qt,
     pyqtSlot
 )
@@ -77,8 +77,8 @@ class TopBannerUI(QWidget):
 
         # layout.addWidget(self.start_stop, 0, 3, 2, 1)
 
-        layout.addWidget(self.start_btn, 0, 3, Qt.AlignCenter)
-        layout.addWidget(self.stop_btn, 1, 3, Qt.AlignCenter)
+        layout.addWidget(self.start_btn, 0, 3, Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.stop_btn, 1, 3, Qt.AlignmentFlag.AlignCenter)
 
 
 class TopBanner(TopBannerUI):
@@ -118,7 +118,7 @@ class TopBanner(TopBannerUI):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
 
