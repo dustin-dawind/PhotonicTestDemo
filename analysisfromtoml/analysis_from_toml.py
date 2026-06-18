@@ -8,11 +8,12 @@ from pathlib import Path
 
 from analysisfromtoml import analysis_scripts
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QObject,
     QThread,
     pyqtSignal,
-    QTimer, pyqtSlot
+    QTimer,
+    pyqtSlot
 )
 
 from rich import print
@@ -44,45 +45,61 @@ path_to_config_toml = path_to_package / "config.toml"
 # TODO: Reconfigure path to sublime_text.exe to the portable version kept on flash drive when that's set up
 path_to_sublime_text = Path(r'C:\Program Files\Sublime Text\sublime_text.exe')
 
-kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-user32 = ctypes.WinDLL('user32', use_last_error=True)
+if sys.platform in ("win32", "nt"):
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    user32 = ctypes.WinDLL('user32', use_last_error=True)
+
+    FLASHW_STOP = 0
+    FLASHW_CAPTION = 0x00000001
+    FLASHW_TRAY = 0x00000002
+    FLASHW_ALL = 0x00000003
+    FLASHW_TIMER = 0x00000004
+    FLASHW_TIMERNOFG = 0x0000000C
 
 
-FLASHW_STOP = 0
-FLASHW_CAPTION = 0x00000001
-FLASHW_TRAY = 0x00000002
-FLASHW_ALL = 0x00000003
-FLASHW_TIMER = 0x00000004
-FLASHW_TIMERNOFG = 0x0000000C
+    class FLASHWINFO(ctypes.Structure):
+        _fields_ = (('cbSize', wintypes.UINT),
+                    ('hwnd', wintypes.HWND),
+                    ('dwFlags', wintypes.DWORD),
+                    ('uCount', wintypes.UINT),
+                    ('dwTimeout', wintypes.DWORD)
+                    )
+
+        def __init__(self, hwnd, flags=FLASHW_TRAY, count=5, timeout_ms=0):
+            super().__init__()
+            self.cbSize = ctypes.sizeof(self)
+            self.hwnd = hwnd
+            self.dwFlags = flags
+            self.uCount = count
+            self.dwTimeout = timeout_ms
 
 
-class FLASHWINFO(ctypes.Structure):
-    _fields_ = (('cbSize', wintypes.UINT),
-                ('hwnd', wintypes.HWND),
-                ('dwFlags', wintypes.DWORD),
-                ('uCount', wintypes.UINT),
-                ('dwTimeout', wintypes.DWORD))
-    def __init__(self, hwnd, flags=FLASHW_TRAY, count=5, timeout_ms=0):
-        self.cbSize = ctypes.sizeof(self)
-        self.hwnd = hwnd
-        self.dwFlags = flags
-        self.uCount = count
-        self.dwTimeout = timeout_ms
+    kernel32.GetConsoleWindow.restype = wintypes.HWND
+    user32.FlashWindowEx.argtypes = (ctypes.POINTER(FLASHWINFO),)
+    user32.IsIconic.argtypes = (wintypes.HWND,)
+    user32.IsIconic.restype = wintypes.BOOL
 
 
-kernel32.GetConsoleWindow.restype = wintypes.HWND
-user32.FlashWindowEx.argtypes = (ctypes.POINTER(FLASHWINFO),)
-user32.IsIconic.argtypes = (wintypes.HWND,)
-user32.IsIconic.restype = wintypes.BOOL
+    def flash_console_icon(n_times: int = 5):
+        console_handle = kernel32.GetConsoleWindow()
+        if not console_handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        winfo = FLASHWINFO(console_handle, n_times)
+        previous_state = user32.FlashWindowEx(ctypes.byref(winfo))
+        return previous_state
 
+    def is_window_iconic() -> bool:
+        return user32.IsIconic(kernel32.GetConsoleWindow())
 
-def flash_console_icon(n_times: int = 5):
-    console_handle = kernel32.GetConsoleWindow()
-    if not console_handle:
-        raise ctypes.WinError(ctypes.get_last_error())
-    winfo = FLASHWINFO(console_handle, n_times)
-    previous_state = user32.FlashWindowEx(ctypes.byref(winfo))
-    return previous_state
+elif sys.platform == "linux":
+    # kernel32 = ctypes.CDLL('kernel32', use_last_error=True)
+    # user32 = ctypes.CDLL('user32', use_last_error=True)
+
+    def flash_console_icon():
+        pass
+
+    def is_window_iconic() -> bool:
+        return False
 
 
 class Analysis(QObject):
@@ -137,15 +154,16 @@ class Analysis(QObject):
 
     @pyqtSlot(str)
     def parse_response(self, response: str):
-        match response:
-            case "y" | "yes" | "Y" | "Yes" | "YES":
+        match response.lower():
+            case "y" | "yes":
                 paths = {}
-                liv_path = self.analysis_config["input_dir_paths"]["liv"]
+                liv_file = self.analysis_config["input_dir_paths"]["liv"]
+                liv_file = liv_file.lstrip(".\\")
+
                 if is_frozen:
-                    liv_path = liv_path.lstrip(".\\")
-                    self.liv_filepath = Path(sys._MEIPASS) / liv_path
+                    self.liv_filepath = Path(sys._MEIPASS) / "resources" / "test_results" / liv_file
                 else:
-                    self.liv_filepath = Path(liv_path)
+                    self.liv_filepath = Path(".") / "resources" / "test_results" / liv_file
 
                 if self.liv_filepath.is_file():
                     paths["liv"] = self.liv_filepath
@@ -162,11 +180,11 @@ class Analysis(QObject):
                 else:
                     self.user_accepted.emit()
 
-            case "q" | "quit" | "Quit" | "QUIT":
+            case "q" | "quit":
                 console.print("[bright_red]Analysis aborted...[/]")
                 self.user_quit_analysis.emit()
                 # breakpoint()
-            case "e" | "edit" | "Edit" | "EDIT":
+            case "e" | "edit":
                 if self.analysis_config["edit_with_sublime_text"] is False:
                     # Try using notepad
                     return_code = open_notepad()
@@ -184,13 +202,13 @@ class Analysis(QObject):
                 self.get_user_input()
 
     def get_user_input(self, preamble: str = None):
-        if user32.IsIconic(kernel32.GetConsoleWindow()):
+        if is_window_iconic():
             flash_console_icon(10)
 
         if preamble is not None:
             console.print(preamble, end="")
-        console.print("\n([yellow]y[/] \[[yellow]yes[/]]/ [yellow]e[/] \[[yellow]edit[/]]/"
-                      " [yellow]q[/] \[[yellow]quit[/]]):"
+        console.print("\n([yellow]y[/] \\[[yellow]yes[/]]/ [yellow]e[/] \\[[yellow]edit[/]]/"
+                      " [yellow]q[/] \\[[yellow]quit[/]]):"
                       "\n"
                       )
         self.request_user_input.emit()

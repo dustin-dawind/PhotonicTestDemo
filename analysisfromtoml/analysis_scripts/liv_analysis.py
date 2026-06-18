@@ -63,8 +63,7 @@ def generate_title(data_path: Path):
 
 
 def get_filename(data_path: Path):
-    return data_path.parents[1] / "analysis_results" / data_path.name.split(".")[0]
-
+    return data_path.name.split(".")[0]
 
 
 def plot_mean_livs(df: pd.DataFrame,
@@ -191,7 +190,7 @@ def plot_mean_livs(df: pd.DataFrame,
 
     # Formatting legends/figure
     device_handles_legend = ax0.legend(loc="lower right",
-                                       ncols=len(all_labels) // 5,
+                                       ncols=len(all_labels) // 5 if len(all_labels) > 5 else 1,
                                        labelspacing=0.3,
                                        columnspacing=1,
                                        handlelength=1,
