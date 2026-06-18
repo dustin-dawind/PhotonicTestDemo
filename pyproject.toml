@@ -1,0 +1,23 @@
+[project]
+name = "photonictestdemo"
+version = "0.2.0"
+description = "Application to demo various areas of photonics testing-related knowledge through interactive visualizations"
+requires-python = ">=3.14"
+dependencies = [
+    "PyQt6",
+    "pandas",
+    "rich",
+    "numpy",
+    "opencv-python",
+    "colorcet",
+    "pyqtgraph",
+    "scipy",
+    "matplotlib",
+    "pyinstaller",
+    "pandas-stubs~=3.0.3",
+    "scipy-stubs~=1.17.1",
+]
+
+
+
+
